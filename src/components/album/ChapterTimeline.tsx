@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useSpring } from "framer-motion";
 import { CalendarDays, Images, MoveLeft } from "lucide-react";
+import { useRef } from "react";
 import type { AlbumTheme } from "@/themes/album-themes";
 import type { Chapter, Story } from "@/types/album";
 import { SafeImage } from "./SafeImage";
@@ -13,6 +14,13 @@ type ChapterTimelineProps = {
 };
 
 export function ChapterTimeline({ chapter, theme, onBack, onOpenStory }: ChapterTimelineProps) {
+  const timelineRef = useRef<HTMLDivElement | null>(null);
+  const { scrollYProgress } = useScroll({
+    target: timelineRef,
+    offset: ["start 80%", "end 55%"],
+  });
+  const lineProgress = useSpring(scrollYProgress, { stiffness: 90, damping: 24 });
+
   return (
     <motion.section
       key={chapter.id}
@@ -53,10 +61,14 @@ export function ChapterTimeline({ chapter, theme, onBack, onOpenStory }: Chapter
             </p>
           </div>
         </div>
-        <div className="relative mt-10 pl-9">
+        <div ref={timelineRef} className="relative mt-10 pl-9">
           <div
             className="absolute left-3 top-2 bottom-2 border-l-2 border-dashed"
             style={{ borderColor: "var(--note-line)" }}
+          />
+          <motion.div
+            className="absolute bottom-2 left-[11px] top-2 w-1 origin-top rounded-full"
+            style={{ scaleY: lineProgress, background: theme.swatches[1] }}
           />
           {chapter.stories.map((story, index) => {
             const mediaCount = 1 + story.thumbs.length + story.extraCount;

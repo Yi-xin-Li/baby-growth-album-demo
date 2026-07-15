@@ -1,6 +1,10 @@
 export type ImageMedia = {
   type: "image";
-  src: string;
+  id?: string;
+  src?: string;
+  thumbnail?: string;
+  preview?: string;
+  original?: string;
   alt?: string;
 };
 
@@ -13,14 +17,23 @@ export type VideoMedia = {
 
 export type MediaItem = ImageMedia | VideoMedia;
 
+export interface MediaStorage {
+  getThumbnail(item: ImageMedia): string;
+  getPreview(item: ImageMedia): string;
+  getOriginal(item: ImageMedia): string;
+}
+
 export type ThemeId = "scrapbook" | "forest" | "space";
 
 export type IllustrationSlotId =
   | "coverHero"
   | "coverDecoration"
   | "pageTexture"
+  | "chapterIcon"
   | "timelineMarker"
+  | "cardDecoration"
   | "noteDecoration"
+  | "noteBackground"
   | "emptyState";
 
 export type Story = {
@@ -32,6 +45,7 @@ export type Story = {
   thumbs: string[];
   extraCount: number;
   videoUrl?: string;
+  videoPoster?: string;
   media?: MediaItem[];
 };
 
@@ -60,5 +74,6 @@ export type GrowthAlbum = {
   profile: AlbumProfile;
   theme: ThemeId;
   animationEnabled: boolean;
+  customIllustrations?: Partial<Record<IllustrationSlotId, string>>;
   chapters: Chapter[];
 };

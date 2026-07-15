@@ -23,5 +23,13 @@ export function SafeImage({
     );
   }
 
-  return <img {...props} className={className} onError={() => setFailed(true)} />;
+  return (
+    <img
+      loading="lazy"
+      decoding="async"
+      {...props}
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  );
 }

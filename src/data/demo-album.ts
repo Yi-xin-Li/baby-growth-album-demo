@@ -23,6 +23,7 @@ export const demoAlbum: GrowthAlbum = {
   },
   theme: "scrapbook",
   animationEnabled: true,
+  customIllustrations: {},
   chapters: [
     {
       id: "birth",

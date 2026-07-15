@@ -1,5 +1,4 @@
 import { forwardRef } from "react";
-import decroBaby from "@/assets/decro_baby.png.asset.json";
 import type { AlbumTheme } from "@/themes/album-themes";
 import type { Chapter } from "@/types/album";
 import { ChapterCard } from "./ChapterCard";
@@ -22,7 +21,7 @@ export const ChapterDirectory = forwardRef<HTMLElement, ChapterDirectoryProps>(
         style={{ background: "var(--chapter-bg)" }}
       >
         <SafeImage
-          src={decroBaby.url}
+          src={theme.illustrations.coverDecoration}
           alt=""
           className="absolute -top-12 right-4 w-24 select-none pointer-events-none object-contain"
         />

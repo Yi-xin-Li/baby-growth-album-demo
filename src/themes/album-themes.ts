@@ -18,8 +18,11 @@ const sharedIllustrations: Record<IllustrationSlotId, string> = {
   coverHero: "/images/cover_baby.png",
   coverDecoration: "/images/decro_baby.png",
   pageTexture: "",
+  chapterIcon: "/images/icon_birth.png",
   timelineMarker: "/images/icon_car.png",
+  cardDecoration: "/images/decro_baby.png",
   noteDecoration: "/images/letter.png",
+  noteBackground: "",
   emptyState: "/images/icon_continue.png",
 };
 

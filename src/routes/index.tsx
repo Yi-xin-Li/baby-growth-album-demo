@@ -41,7 +41,11 @@ function AlbumPage() {
   const story =
     activeStory && storyChapter ? (storyChapter.stories[activeStory.storyIndex] ?? null) : null;
   const storyMedia = story ? getStoryMedia(story) : [];
-  const activeTheme = albumThemes[album.theme];
+  const themeDefaults = albumThemes[album.theme];
+  const activeTheme = {
+    ...themeDefaults,
+    illustrations: { ...themeDefaults.illustrations, ...album.customIllustrations },
+  };
   const storyCount = album.chapters.reduce(
     (total, currentChapter) => total + currentChapter.stories.length,
     0,

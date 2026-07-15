@@ -1,10 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, Check, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  Check,
+  Download,
+  FileUp,
+  ImagePlus,
+  Palette,
+  Plus,
+  RotateCcw,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useAlbumDraft } from "@/hooks/use-album-draft";
+import { downloadAlbumJson, parseAlbumJson, validateAlbumForExport } from "@/lib/album-transfer";
+import { createImageVariants, maxImagesPerStory } from "@/lib/image-processing";
+import { processIllustration } from "@/lib/illustration-processing";
+import { getImageSource } from "@/lib/album-media";
 import { albumThemeList } from "@/themes/album-themes";
-import type { GrowthAlbum, Story } from "@/types/album";
+import type { GrowthAlbum, ImageMedia, Story } from "@/types/album";
 
 export const Route = createFileRoute("/editor")({
   head: () => ({ meta: [{ title: "本地编辑台｜宝宝成长相册" }] }),
@@ -18,6 +35,8 @@ function AlbumEditor() {
   const { album, setAlbum, reset, status } = useAlbumDraft();
   const [chapterId, setChapterId] = useState(album.chapters[0]?.id ?? "");
   const [storyId, setStoryId] = useState(album.chapters[0]?.stories[0]?.id ?? "");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [editorMessage, setEditorMessage] = useState("");
   const chapter = album.chapters.find((item) => item.id === chapterId) ?? album.chapters[0];
   const story = chapter?.stories.find((item) => item.id === storyId) ?? chapter?.stories[0];
   const activeTheme = albumThemeList.find((theme) => theme.id === album.theme)!;
@@ -104,6 +123,98 @@ function AlbumEditor() {
     }));
     setChapterId(nextChapterId);
     setStoryId(story.id);
+  };
+
+  const imageMedia = (story?.media ?? []).filter(
+    (item): item is ImageMedia => item.type === "image",
+  );
+
+  const uploadImages = async (files: FileList | null) => {
+    if (!story || !files?.length) return;
+    if (imageMedia.length + files.length > maxImagesPerStory) {
+      setEditorMessage(`每篇故事最多 ${maxImagesPerStory} 张照片`);
+      return;
+    }
+    setEditorMessage("");
+    try {
+      const variants: ImageMedia[] = [];
+      for (let index = 0; index < files.length; index += 1) {
+        const base = (index / files.length) * 100;
+        const item = await createImageVariants(files[index], (progress) =>
+          setUploadProgress(Math.round(base + progress / files.length)),
+        );
+        variants.push(item);
+      }
+      const existing = story.media ?? [];
+      updateStory({
+        media: [...existing, ...variants],
+        cover: imageMedia.length ? story.cover : getImageSource(variants[0], "thumbnail"),
+        thumbs: [...story.thumbs, ...variants.map((item) => getImageSource(item, "thumbnail"))],
+        extraCount: 0,
+      });
+      setEditorMessage(`已生成 ${variants.length} 张图片的缩略图、预览图和高清图`);
+    } catch (error) {
+      setEditorMessage(error instanceof Error ? error.message : "图片处理失败");
+    } finally {
+      setUploadProgress(null);
+    }
+  };
+
+  const reorderImage = (index: number, direction: -1 | 1) => {
+    if (!story?.media) return;
+    const images = story.media.filter((item): item is ImageMedia => item.type === "image");
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= images.length) return;
+    [images[index], images[nextIndex]] = [images[nextIndex], images[index]];
+    const videos = story.media.filter((item) => item.type === "video");
+    updateStory({
+      media: [...images, ...videos],
+      cover: getImageSource(images[0], "thumbnail"),
+      thumbs: images.map((item) => getImageSource(item, "thumbnail")),
+    });
+  };
+
+  const removeImage = (index: number) => {
+    if (!story?.media) return;
+    const images = story.media.filter((item): item is ImageMedia => item.type === "image");
+    images.splice(index, 1);
+    const videos = story.media.filter((item) => item.type === "video");
+    updateStory({
+      media: [...images, ...videos],
+      cover: images[0] ? getImageSource(images[0], "thumbnail") : "/images/cover_baby.png",
+      thumbs: images.map((item) => getImageSource(item, "thumbnail")),
+    });
+  };
+
+  const exportJson = () => {
+    const errors = validateAlbumForExport(album);
+    if (errors.length) return setEditorMessage(errors.join("；"));
+    downloadAlbumJson(album);
+    setEditorMessage("album.json 已导出");
+  };
+
+  const importJson = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const imported = parseAlbumJson(await file.text());
+      setAlbum(() => imported);
+      setChapterId(imported.chapters[0]?.id ?? "");
+      setStoryId(imported.chapters[0]?.stories[0]?.id ?? "");
+      setEditorMessage("配置导入成功，已自动保存为草稿");
+    } catch {
+      setEditorMessage("导入失败：请选择有效的 album.json");
+    }
+  };
+
+  const uploadVideoPoster = async (file?: File) => {
+    if (!file) return;
+    try {
+      setEditorMessage("正在处理视频封面…");
+      updateStory({ videoPoster: await processIllustration(file) });
+      setEditorMessage("视频封面已更新");
+    } catch (error) {
+      setEditorMessage(error instanceof Error ? error.message : "视频封面处理失败");
+    }
   };
 
   return (
@@ -202,6 +313,12 @@ function AlbumEditor() {
                 className="size-5 accent-black"
               />
             </label>
+            <a
+              href="/editor/theme"
+              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-black px-4 text-xs text-white"
+            >
+              <Palette className="size-3.5" /> 设置主题插画槽位
+            </a>
           </EditorSection>
 
           <EditorSection
@@ -290,6 +407,119 @@ function AlbumEditor() {
                       onChange={(event) => updateStory({ note: event.target.value })}
                     />
                   </EditorField>
+                  <div className="grid gap-3 rounded-2xl bg-neutral-50 p-4 sm:grid-cols-2">
+                    <EditorField label="视频地址（可选，点击后才加载）">
+                      <input
+                        className={inputClass}
+                        value={story.videoUrl ?? ""}
+                        onChange={(event) =>
+                          updateStory({ videoUrl: event.target.value || undefined })
+                        }
+                        placeholder="./media/video/story.mp4"
+                      />
+                    </EditorField>
+                    <div>
+                      <p className="text-xs font-bold text-neutral-600">视频封面（可选）</p>
+                      <label className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-3 text-xs shadow-sm">
+                        <ImagePlus className="size-3.5" /> 上传视频封面
+                        <input
+                          type="file"
+                          accept="image/png,image/webp,image/jpeg"
+                          className="sr-only"
+                          onChange={(event) => {
+                            void uploadVideoPoster(event.target.files?.[0]);
+                            event.target.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-dashed border-black/15 bg-white/70 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold">照片资源</p>
+                        <p className="mt-1 text-[10px] leading-4 text-neutral-400">
+                          JPG / PNG / WebP，单张不超过 12MB；自动生成三级 WebP 资源。
+                        </p>
+                      </div>
+                      <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-black px-3 text-xs text-white">
+                        <ImagePlus className="size-3.5" /> 上传照片
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          multiple
+                          className="sr-only"
+                          onChange={(event) => {
+                            void uploadImages(event.target.files);
+                            event.target.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
+                    {uploadProgress !== null && (
+                      <div className="mt-4">
+                        <div className="mb-1 flex justify-between text-[10px] text-neutral-500">
+                          <span>正在压缩并生成资源</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-neutral-200">
+                          <div
+                            className="h-full rounded-full bg-neutral-800 transition-[width]"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {imageMedia.length > 0 && (
+                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {imageMedia.map((item, index) => (
+                          <div
+                            key={item.id ?? index}
+                            className="group relative overflow-hidden rounded-xl bg-neutral-100"
+                          >
+                            <img
+                              src={getImageSource(item, "thumbnail")}
+                              alt={item.alt ?? "故事照片"}
+                              className="aspect-square w-full object-cover"
+                            />
+                            <div className="absolute inset-x-1 bottom-1 flex justify-center gap-1 rounded-lg bg-black/55 p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+                              <button
+                                type="button"
+                                aria-label="前移照片"
+                                disabled={index === 0}
+                                onClick={() => reorderImage(index, -1)}
+                                className="grid size-7 place-items-center rounded-md bg-white/90 disabled:opacity-30"
+                              >
+                                <ArrowUp className="size-3" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="后移照片"
+                                disabled={index === imageMedia.length - 1}
+                                onClick={() => reorderImage(index, 1)}
+                                className="grid size-7 place-items-center rounded-md bg-white/90 disabled:opacity-30"
+                              >
+                                <ArrowDown className="size-3" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="删除照片"
+                                onClick={() => removeImage(index)}
+                                className="grid size-7 place-items-center rounded-md bg-red-50 text-red-600"
+                              >
+                                <Trash2 className="size-3" />
+                              </button>
+                            </div>
+                            {index === 0 && (
+                              <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[9px] font-bold">
+                                封面
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={deleteStory}
@@ -304,6 +534,41 @@ function AlbumEditor() {
                 </div>
               )}
             </div>
+          </EditorSection>
+
+          <EditorSection
+            title="配置导入与导出"
+            description="JSON 用于迁移配置；完整媒体交付包将在下一步生成 ZIP。"
+          >
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={exportJson}
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-black px-4 text-xs text-white"
+              >
+                <Download className="size-3.5" /> 导出 album.json
+              </button>
+              <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-4 text-xs shadow-sm">
+                <FileUp className="size-3.5" /> 导入 album.json
+                <input
+                  type="file"
+                  accept="application/json,.json"
+                  className="sr-only"
+                  onChange={(event) => {
+                    void importJson(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            {editorMessage && (
+              <p
+                role="status"
+                className="mt-4 rounded-xl bg-neutral-100 px-3 py-2 text-xs text-neutral-600"
+              >
+                {editorMessage}
+              </p>
+            )}
           </EditorSection>
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">

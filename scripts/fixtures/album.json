@@ -1,0 +1,24 @@
+{
+  "id": "export-test",
+  "slug": "export-test",
+  "visibility": "unlisted",
+  "profile": {
+    "displayName": "导出测试",
+    "romanizedName": "EXPORT TEST",
+    "birthDate": "2026-01-01",
+    "welcome": "测试交付包"
+  },
+  "theme": "scrapbook",
+  "animationEnabled": true,
+  "chapters": [
+    {
+      "id": "chapter-test",
+      "title": "测试章节",
+      "age": "测试",
+      "icon": "/images/icon_birth.png",
+      "bg": "#ffffff",
+      "smallIcon": "✿",
+      "stories": []
+    }
+  ]
+}

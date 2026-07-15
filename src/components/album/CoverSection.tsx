@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import coverBaby from "@/assets/cover_baby.png.asset.json";
 import type { AlbumTheme } from "@/themes/album-themes";
 import type { AlbumProfile } from "@/types/album";
 import { SafeImage } from "./SafeImage";
@@ -39,7 +38,7 @@ export function CoverSection({ profile, theme, storyCount, onExplore }: CoverSec
         className="relative z-10 mt-8 flex w-full max-w-md items-end justify-center"
       >
         <SafeImage
-          src={coverBaby.url}
+          src={theme.illustrations.coverHero}
           alt={profile.displayName}
           className="w-2/3 max-w-[260px] object-contain"
         />

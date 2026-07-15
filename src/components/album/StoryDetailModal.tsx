@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { getImageSource, getImageSrcSet } from "@/lib/album-media";
 import type { Chapter, MediaItem, Story } from "@/types/album";
 import { SafeImage } from "./SafeImage";
 
@@ -20,7 +21,8 @@ export function StoryDetailModal({
   onOpenMedia,
 }: StoryDetailModalProps) {
   const first = media[0];
-  const firstSource = first?.type === "video" ? first.poster : first?.src;
+  const firstSource =
+    first?.type === "video" ? first.poster : first ? getImageSource(first, "preview") : undefined;
 
   return (
     <AnimatePresence>
@@ -73,6 +75,8 @@ export function StoryDetailModal({
               >
                 <SafeImage
                   src={firstSource ?? story.cover}
+                  srcSet={first?.type === "image" ? getImageSrcSet(first) : undefined}
+                  sizes="(max-width: 640px) 100vw, 448px"
                   alt={story.title}
                   fallbackLabel={story.title}
                   className="w-full aspect-[4/5] object-cover"
@@ -89,7 +93,8 @@ export function StoryDetailModal({
               {media.length > 1 && (
                 <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
                   {media.slice(1, 5).map((item, index) => {
-                    const source = item.type === "video" ? item.poster : item.src;
+                    const source =
+                      item.type === "video" ? item.poster : getImageSource(item, "thumbnail");
                     return (
                       <button
                         key={`${source}-${index}`}

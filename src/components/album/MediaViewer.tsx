@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { getImageSource } from "@/lib/album-media";
 import type { MediaItem } from "@/types/album";
 import { SafeImage } from "./SafeImage";
 
@@ -13,11 +14,13 @@ type MediaViewerProps = {
 
 export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
   const [playing, setPlaying] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
   const go = useCallback(
     (direction: number) => {
       if (!state) return;
       onChange((state.index + direction + state.media.length) % state.media.length);
       setPlaying(false);
+      setVideoFailed(false);
     },
     [onChange, state],
   );
@@ -73,6 +76,8 @@ export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
                 controls
                 autoPlay
                 playsInline
+                preload="none"
+                onError={() => setVideoFailed(true)}
                 className="max-h-[82vh] w-full rounded-xl object-contain"
               />
             ) : (
@@ -82,7 +87,7 @@ export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
                 className="relative block w-full cursor-default"
               >
                 <SafeImage
-                  src={item.type === "video" ? item.poster : item.src}
+                  src={item.type === "video" ? item.poster : getImageSource(item, "original")}
                   alt={item.alt ?? "成长回忆"}
                   className="max-h-[82vh] w-full rounded-xl object-contain"
                 />
@@ -94,6 +99,11 @@ export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
                   </span>
                 )}
               </button>
+            )}
+            {videoFailed && (
+              <p className="mt-3 rounded-lg bg-red-950/60 px-3 py-2 text-center text-xs text-red-100">
+                视频暂时无法播放，请检查文件是否仍在交付包中。
+              </p>
             )}
             <p className="mt-3 text-center text-xs text-white/70">
               {state.index + 1} / {state.media.length}
