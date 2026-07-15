@@ -1,10 +1,4 @@
 import type { IllustrationSlotId, ThemeId } from "@/types/album";
-import forestCover from "@/assets/themes/forest/cover.svg?url";
-import forestMarker from "@/assets/themes/forest/marker.svg?url";
-import scrapbookCover from "@/assets/themes/scrapbook/cover.svg?url";
-import scrapbookMarker from "@/assets/themes/scrapbook/marker.svg?url";
-import spaceCover from "@/assets/themes/space/cover.svg?url";
-import spaceMarker from "@/assets/themes/space/marker.svg?url";
 
 export type AlbumTheme = {
   id: ThemeId;
@@ -20,17 +14,17 @@ export type AlbumTheme = {
   };
 };
 
-function themeIllustrations(cover: string, marker: string): Record<IllustrationSlotId, string> {
+function originalIllustrations(): Record<IllustrationSlotId, string> {
   return {
-    coverHero: cover,
-    coverDecoration: marker,
+    coverHero: "/images/cover_baby.png",
+    coverDecoration: "/images/decro_baby.png",
     pageTexture: "",
-    chapterIcon: marker,
-    timelineMarker: marker,
-    cardDecoration: marker,
+    chapterIcon: "/images/icon_birth.png",
+    timelineMarker: "/images/icon_car.png",
+    cardDecoration: "/images/decro_baby.png",
     noteDecoration: "/images/letter.png",
     noteBackground: "",
-    emptyState: cover,
+    emptyState: "/images/icon_continue.png",
   };
 }
 
@@ -42,7 +36,7 @@ export const albumThemes: Record<ThemeId, AlbumTheme> = {
     description: "撕纸、贴纸和蜡笔笔触组成的温暖成长手账。",
     motif: "✿",
     swatches: ["#f8f0e3", "#e7b8a5", "#b9c68e"],
-    illustrations: themeIllustrations(scrapbookCover, scrapbookMarker),
+    illustrations: originalIllustrations(),
     motion: { decoration: "float", timelineDuration: 0.8 },
   },
   forest: {
@@ -52,7 +46,7 @@ export const albumThemes: Record<ThemeId, AlbumTheme> = {
     description: "水彩植物、小动物与藤蔓串起自然的成长章节。",
     motif: "❧",
     swatches: ["#eef1df", "#8fa987", "#d4aa78"],
-    illustrations: themeIllustrations(forestCover, forestMarker),
+    illustrations: originalIllustrations(),
     motion: { decoration: "sway", timelineDuration: 1 },
   },
   space: {
@@ -62,7 +56,7 @@ export const albumThemes: Record<ThemeId, AlbumTheme> = {
     description: "星球、飞船和柔和星光陪伴每一次勇敢探索。",
     motif: "✦",
     swatches: ["#eef0fa", "#7b83ad", "#e5b96f"],
-    illustrations: themeIllustrations(spaceCover, spaceMarker),
+    illustrations: originalIllustrations(),
     motion: { decoration: "twinkle", timelineDuration: 1.1 },
   },
 };

@@ -1,15 +1,13 @@
 import { motion } from "framer-motion";
-import type { AlbumTheme } from "@/themes/album-themes";
 import type { Chapter } from "@/types/album";
 import { SafeImage } from "./SafeImage";
 
 type ChapterCardProps = {
   chapter: Chapter;
-  theme: AlbumTheme;
   onOpen: (chapterId: string) => void;
 };
 
-export function ChapterCard({ chapter, theme, onOpen }: ChapterCardProps) {
+export function ChapterCard({ chapter, onOpen }: ChapterCardProps) {
   return (
     <motion.button
       data-testid={`chapter-${chapter.id}`}
@@ -32,11 +30,6 @@ export function ChapterCard({ chapter, theme, onOpen }: ChapterCardProps) {
         <span className="absolute bottom-2 right-2 rounded-full bg-white/90 px-2 py-1 text-[9px] font-bold shadow-sm">
           {chapter.stories.length} 篇
         </span>
-        <SafeImage
-          src={theme.illustrations.chapterIcon}
-          alt=""
-          className="absolute left-2 top-2 size-9 rounded-full bg-white/85 p-1 object-contain shadow-sm"
-        />
       </div>
       <div className="text-center">
         <p className="text-[15px] font-bold tracking-wider">{chapter.title}</p>
