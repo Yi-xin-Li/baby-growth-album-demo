@@ -18,7 +18,7 @@ export function ChapterCard({ chapter, onOpen }: ChapterCardProps) {
       className="group flex flex-col items-center gap-2"
     >
       <div
-        className="relative aspect-square w-full overflow-hidden rounded-[18px_15px_20px_16px] border-[3px] border-black/80 shadow-[0_10px_24px_rgba(45,35,25,0.14)] transition-shadow after:pointer-events-none after:absolute after:inset-[2px] after:rounded-[14px_17px_15px_18px] after:border after:border-black/30 after:content-[''] after:[transform:rotate(-0.45deg)] group-hover:shadow-[0_14px_30px_rgba(45,35,25,0.18)]"
+        className="relative aspect-square w-full overflow-hidden rounded-2xl border-2 border-black/80 shadow-[0_10px_24px_rgba(45,35,25,0.14)] transition-shadow group-hover:shadow-[0_14px_30px_rgba(45,35,25,0.18)]"
         style={{ background: chapter.bg }}
       >
         <SafeImage

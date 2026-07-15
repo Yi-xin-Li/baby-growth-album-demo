@@ -22,7 +22,10 @@ test("访客可以完成章节、故事和高清查看流程", async ({ page }) 
   const chapterArtwork = page.getByTestId("chapter-birth").locator(":scope > div").first();
   await expect(chapterArtwork.locator("img")).toHaveCount(1);
   await expect(chapterArtwork.locator("img")).toHaveAttribute("src", "/images/decro_birth.png");
-  await expect(chapterArtwork).toHaveCSS("border-top-width", "3px");
+  await expect(chapterArtwork).toHaveCSS("border-top-width", "2px");
+  await expect(chapterArtwork).toHaveCSS("border-right-width", "2px");
+  await expect(chapterArtwork).toHaveCSS("border-bottom-width", "2px");
+  await expect(chapterArtwork).toHaveCSS("border-left-width", "2px");
   await expect(chapterArtwork).toHaveCSS("background-color", /.+/);
   await expect(chapterArtwork).not.toHaveCSS("box-shadow", "none");
   await expect(page.locator('img[src="/images/decro_baby.png"]')).toBeVisible();
