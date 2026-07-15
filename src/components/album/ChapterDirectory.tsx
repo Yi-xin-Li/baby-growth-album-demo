@@ -36,7 +36,7 @@ export const ChapterDirectory = forwardRef<HTMLElement, ChapterDirectoryProps>(
         </div>
         <div className="relative mx-auto mt-10 grid max-w-md grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3">
           {chapters.map((chapter) => (
-            <ChapterCard key={chapter.id} chapter={chapter} onOpen={onOpen} />
+            <ChapterCard key={chapter.id} chapter={chapter} theme={theme} onOpen={onOpen} />
           ))}
         </div>
       </section>
