@@ -20,7 +20,7 @@ import { downloadAlbumJson, parseAlbumJson, validateAlbumForExport } from "@/lib
 import { createImageVariants, maxImagesPerStory } from "@/lib/image-processing";
 import { processIllustration } from "@/lib/illustration-processing";
 import { getImageSource } from "@/lib/album-media";
-import { albumThemeList } from "@/themes/album-themes";
+import { fixedAlbumTheme } from "@/themes/album-themes";
 import type { GrowthAlbum, ImageMedia, Story } from "@/types/album";
 
 export const Route = createFileRoute("/editor")({
@@ -39,7 +39,7 @@ function AlbumEditor() {
   const [editorMessage, setEditorMessage] = useState("");
   const chapter = album.chapters.find((item) => item.id === chapterId) ?? album.chapters[0];
   const story = chapter?.stories.find((item) => item.id === storyId) ?? chapter?.stories[0];
-  const activeTheme = albumThemeList.find((theme) => theme.id === album.theme)!;
+  const activeTheme = fixedAlbumTheme;
   const statusText = {
     loading: "读取草稿…",
     saving: "正在自动保存…",
@@ -290,26 +290,8 @@ function AlbumEditor() {
             </div>
           </EditorSection>
 
-          <EditorSection title="主题画风" description="三套主题共用数据，切换不会影响故事内容。">
-            <div className="grid gap-3 sm:grid-cols-3">
-              {albumThemeList.map((theme) => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  onClick={() => setAlbum((current) => ({ ...current, theme: theme.id }))}
-                  className={`rounded-2xl border p-3 text-left transition ${album.theme === theme.id ? "border-black bg-white shadow-sm" : "border-black/5 bg-white/45 hover:bg-white/75"}`}
-                >
-                  <span className="text-xl" style={{ color: theme.swatches[1] }}>
-                    {theme.motif}
-                  </span>
-                  <strong className="mt-2 block text-sm">{theme.name}</strong>
-                  <span className="mt-1 block text-[10px] leading-4 text-neutral-500">
-                    {theme.description}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <label className="mt-4 flex min-h-12 items-center justify-between rounded-2xl bg-white/70 px-4 text-xs font-bold">
+          <EditorSection title="动效与插画" description="调整展示动画，或替换页面中预留的插画。">
+            <label className="flex min-h-12 items-center justify-between rounded-2xl bg-white/70 px-4 text-xs font-bold">
               <span>
                 启用温柔动效
                 <span className="mt-1 block font-normal text-neutral-400">
@@ -350,7 +332,7 @@ function AlbumEditor() {
               href="/editor/theme"
               className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-black px-4 text-xs text-white"
             >
-              <Palette className="size-3.5" /> 设置主题插画槽位
+              <Palette className="size-3.5" /> 自定义插画
             </a>
           </EditorSection>
 
@@ -634,7 +616,7 @@ function AlbumEditor() {
             </div>
             <div
               className="relative min-h-[520px] overflow-hidden p-7 text-center"
-              data-album-theme={album.theme}
+              data-album-theme="scrapbook"
               style={{ background: "var(--paper)", color: "var(--ink)" }}
             >
               <div

@@ -7,11 +7,10 @@ import { ChapterTimeline } from "@/components/album/ChapterTimeline";
 import { CoverSection } from "@/components/album/CoverSection";
 import { MediaViewer, type ViewerState } from "@/components/album/MediaViewer";
 import { StoryDetailModal } from "@/components/album/StoryDetailModal";
-import { ThemeSwitcher } from "@/components/album/ThemeSwitcher";
 import { demoAlbum } from "@/data/demo-album";
 import { getStoryMedia } from "@/lib/album-media";
 import { useAlbumDraft } from "@/hooks/use-album-draft";
-import { albumThemes } from "@/themes/album-themes";
+import { fixedAlbumTheme } from "@/themes/album-themes";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,7 +32,7 @@ type AlbumPageProps = {
 };
 
 export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps = {}) {
-  const { album, setAlbum } = useAlbumDraft();
+  const { album } = useAlbumDraft();
   const chaptersRef = useRef<HTMLElement | null>(null);
   const [chapterId, setChapterId] = useState<string | null>(initialChapterId ?? null);
   const [activeStory, setActiveStory] = useState<ActiveStory>(null);
@@ -46,14 +45,13 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
   const story =
     activeStory && storyChapter ? (storyChapter.stories[activeStory.storyIndex] ?? null) : null;
   const storyMedia = story ? getStoryMedia(story) : [];
-  const themeDefaults = albumThemes[album.theme];
   const activeTheme = {
-    ...themeDefaults,
-    illustrations: { ...themeDefaults.illustrations, ...album.customIllustrations },
+    ...fixedAlbumTheme,
+    illustrations: { ...fixedAlbumTheme.illustrations, ...album.customIllustrations },
     motion: {
-      ...themeDefaults.motion,
+      ...fixedAlbumTheme.motion,
       timelineDuration:
-        themeDefaults.motion.timelineDuration * (album.animationSpeed === "slow" ? 1.3 : 1),
+        fixedAlbumTheme.motion.timelineDuration * (album.animationSpeed === "slow" ? 1.3 : 1),
     },
   };
   const storyCount = album.chapters.reduce(
@@ -117,16 +115,12 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
 
   return (
     <main
-      data-album-theme={album.theme}
+      data-album-theme="scrapbook"
       data-animation-enabled={album.animationEnabled}
       className="min-h-screen w-full overflow-x-hidden"
       style={{ fontFamily: "'Noto Serif SC', serif", color: "var(--ink)" }}
     >
       <AlbumNavigation onHome={goHome} onOpenDirectory={scrollToDirectory} />
-      <ThemeSwitcher
-        value={album.theme}
-        onChange={(theme) => setAlbum((current) => ({ ...current, theme }))}
-      />
 
       <AnimatePresence mode="wait">
         {chapter ? (

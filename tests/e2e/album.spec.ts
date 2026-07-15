@@ -14,12 +14,11 @@ async function collectRuntimeErrors(page: Page) {
   return errors;
 }
 
-test("访客可以完成主题、章节、故事和高清查看流程", async ({ page }) => {
+test("访客可以完成章节、故事和高清查看流程", async ({ page }) => {
   const errors = await collectRuntimeErrors(page);
   await page.goto("/");
-  await page.getByTestId("theme-switcher").click();
-  await page.getByTestId("theme-option-forest").click();
-  await expect(page.locator("main")).toHaveAttribute("data-album-theme", "forest");
+  await expect(page.locator("main")).toHaveAttribute("data-album-theme", "scrapbook");
+  await expect(page.getByText("选择主题")).toHaveCount(0);
 
   await page.getByTestId("chapter-birth").click();
   await expect(page.getByRole("heading", { name: "诞生记忆" })).toBeVisible();
@@ -98,11 +97,19 @@ test("上传照片会生成三级资源并可排序删除", async ({ page }) => 
   await expect(page.getByRole("button", { name: "后移照片" })).toBeDisabled();
 });
 
-test("插画槽位支持上传并恢复主题默认", async ({ page }) => {
+test("插画上传后需要手动保存，并支持恢复默认", async ({ page }) => {
   await page.goto("/editor/theme");
   const firstUpload = page.locator('input[type="file"][accept*="image/svg+xml"]').first();
   await firstUpload.setInputFiles(fixtureImage);
-  await expect(page.getByRole("status")).toContainText("插画已替换", { timeout: 20_000 });
+  await expect(page.getByRole("status")).toContainText("插画已进入预览", { timeout: 20_000 });
+  const saveButton = page.getByRole("button", { name: "保存插画" });
+  await expect(saveButton).toBeEnabled();
+  await page.getByRole("link", { name: "返回编辑台" }).click();
+  await expect(page.getByRole("heading", { name: "插画还没有保存" })).toBeVisible();
+  await page.getByRole("button", { name: "继续编辑" }).click();
+  await saveButton.click();
+  await expect(page.getByRole("status")).toContainText("自定义插画已保存");
+  await expect(saveButton).toBeDisabled();
   const resetButton = page.getByRole("button", { name: "恢复封面主插画默认插画" });
   await expect(resetButton).toBeEnabled();
   await resetButton.click();
