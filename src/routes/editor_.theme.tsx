@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ImagePlus, RotateCcw, Save } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AlbumNavigation } from "@/components/album/AlbumNavigation";
 import { useAlbumDraft } from "@/hooks/use-album-draft";
 import { saveAlbumDraft } from "@/lib/album-store";
 import { processIllustration } from "@/lib/illustration-processing";
@@ -100,16 +101,17 @@ function IllustrationEditor() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f1eb] px-4 py-6 text-[#2e2a25] sm:px-7">
+    <main className="min-h-screen bg-[#f4f1eb] px-4 pb-6 pt-[104px] text-[#2e2a25] sm:px-7 sm:pt-[72px]">
+      <AlbumNavigation active="profile" />
       <div className="mx-auto max-w-5xl">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <a
-              href="/editor"
+              href="/editor/profile"
               onClick={(event) => {
                 if (!isDirty) return;
                 event.preventDefault();
-                setLeaveTarget("/editor");
+                setLeaveTarget("/editor/profile");
               }}
               aria-label="返回编辑台"
               className="grid size-10 place-items-center rounded-full bg-white shadow-sm"

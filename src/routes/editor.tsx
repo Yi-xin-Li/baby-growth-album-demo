@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { AlbumNavigation } from "@/components/album/AlbumNavigation";
 import { useAlbumDraft } from "@/hooks/use-album-draft";
 import { downloadAlbumJson, parseAlbumJson, validateAlbumForExport } from "@/lib/album-transfer";
 import { createImageVariants, maxImagesPerStory } from "@/lib/image-processing";
@@ -32,7 +33,9 @@ export const Route = createFileRoute("/editor")({
 const inputClass =
   "mt-1.5 min-h-11 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm outline-none transition focus:border-black/30 focus:ring-2 focus:ring-black/5";
 
-export function AlbumEditor() {
+export type EditorMode = "profile" | "stories";
+
+export function AlbumEditor({ mode }: { mode: EditorMode }) {
   const { album, setAlbum, reset, status } = useAlbumDraft();
   const [chapterId, setChapterId] = useState(album.chapters[0]?.id ?? "");
   const [storyId, setStoryId] = useState(album.chapters[0]?.stories[0]?.id ?? "");
@@ -231,8 +234,9 @@ export function AlbumEditor() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f1eb] text-[#2e2a25]">
-      <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-black/5 bg-[#f4f1eb]/90 px-4 backdrop-blur sm:px-7">
+    <main className="min-h-screen bg-[#f4f1eb] pt-[88px] text-[#2e2a25] sm:pt-[52px]">
+      <AlbumNavigation active={mode} />
+      <header className="sticky top-[88px] z-30 flex min-h-14 items-center justify-between border-b border-black/5 bg-[#f4f1eb]/90 px-4 backdrop-blur sm:top-[52px] sm:px-7">
         <div className="flex items-center gap-3">
           <a
             href="/"
@@ -243,7 +247,7 @@ export function AlbumEditor() {
           </a>
           <div>
             <p className="text-[10px] tracking-[0.25em] text-neutral-400">LOCAL ALBUM STUDIO</p>
-            <h1 className="font-bold">宝宝相册编辑台</h1>
+            <h1 className="font-bold">{mode === "profile" ? "宝宝资料" : "成长故事"}</h1>
           </div>
         </div>
         <div className="flex items-center gap-2 text-[11px] text-neutral-500">
@@ -256,136 +260,113 @@ export function AlbumEditor() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 p-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(330px,.85fr)] lg:p-7">
+      <div className={`mx-auto p-4 lg:p-7 ${mode === "profile" ? "max-w-2xl" : "max-w-4xl"}`}>
         <div className="space-y-5">
-          <EditorSection title="宝宝资料" description="修改后约半秒自动保存，无需点击提交。">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <EditorField label="宝宝姓名">
-                <input
-                  className={inputClass}
-                  value={album.profile.displayName}
-                  onChange={(event) => updateProfile("displayName", event.target.value)}
-                />
-              </EditorField>
-              <EditorField label="英文名 / 拼音">
-                <input
-                  className={inputClass}
-                  value={album.profile.romanizedName}
-                  onChange={(event) => updateProfile("romanizedName", event.target.value)}
-                />
-              </EditorField>
-              <EditorField label="出生日期">
-                <input
-                  className={inputClass}
-                  value={album.profile.birthDate}
-                  onChange={(event) => updateProfile("birthDate", event.target.value)}
-                />
-              </EditorField>
-              <EditorField label="欢迎语">
-                <input
-                  className={inputClass}
-                  value={album.profile.welcome}
-                  onChange={(event) => updateProfile("welcome", event.target.value)}
-                />
-              </EditorField>
-            </div>
-          </EditorSection>
-
-          <EditorSection title="动效与插画" description="调整展示动画，或替换页面中预留的插画。">
-            <label className="flex min-h-12 items-center justify-between rounded-2xl bg-white/70 px-4 text-xs font-bold">
-              <span>
-                启用温柔动效
-                <span className="mt-1 block font-normal text-neutral-400">
-                  关闭后保留静态排版，并继续尊重系统减少动画设置。
-                </span>
-              </span>
-              <input
-                type="checkbox"
-                checked={album.animationEnabled}
-                onChange={(event) =>
-                  setAlbum((current) => ({ ...current, animationEnabled: event.target.checked }))
-                }
-                className="size-5 accent-black"
-              />
-            </label>
-            <label className="mt-3 flex min-h-12 items-center justify-between gap-4 rounded-2xl bg-white/70 px-4 text-xs font-bold">
-              <span>
-                动画速度
-                <span className="mt-1 block font-normal text-neutral-400">
-                  舒缓更适合阅读，标准节奏稍快。
-                </span>
-              </span>
-              <select
-                className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs"
-                value={album.animationSpeed}
-                onChange={(event) =>
-                  setAlbum((current) => ({
-                    ...current,
-                    animationSpeed: event.target.value as GrowthAlbum["animationSpeed"],
-                  }))
-                }
-              >
-                <option value="slow">舒缓</option>
-                <option value="normal">标准</option>
-              </select>
-            </label>
-            <a
-              href="/editor/theme"
-              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-black px-4 text-xs text-white"
-            >
-              <Palette className="size-3.5" /> 自定义插画
-            </a>
-          </EditorSection>
-
-          <EditorSection
-            title="成长故事"
-            description={`当前共有 ${storyCount} 篇故事，可在受控结构内新增、修改和删除。`}
-          >
-            <div className="grid gap-4 sm:grid-cols-[170px_1fr]">
-              <div className="space-y-3">
-                <select
-                  className={inputClass}
-                  value={chapter?.id ?? ""}
-                  onChange={(event) => {
-                    const next = album.chapters.find((item) => item.id === event.target.value);
-                    setChapterId(event.target.value);
-                    setStoryId(next?.stories[0]?.id ?? "");
-                  }}
-                >
-                  {album.chapters.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.title}
-                    </option>
-                  ))}
-                </select>
-                <div className="space-y-1.5">
-                  {chapter?.stories.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setStoryId(item.id)}
-                      className={`w-full rounded-xl px-3 py-2 text-left text-xs ${story?.id === item.id ? "bg-black text-white" : "bg-white hover:bg-white/70"}`}
-                    >
-                      <span className="block truncate font-bold">{item.title}</span>
-                      <span className="mt-0.5 block opacity-60">{item.date}</span>
-                    </button>
-                  ))}
+          {mode === "profile" && (
+            <>
+              <EditorSection title="宝宝资料" description="修改后约半秒自动保存，无需点击提交。">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <EditorField label="宝宝姓名">
+                    <input
+                      className={inputClass}
+                      value={album.profile.displayName}
+                      onChange={(event) => updateProfile("displayName", event.target.value)}
+                    />
+                  </EditorField>
+                  <EditorField label="英文名 / 拼音">
+                    <input
+                      className={inputClass}
+                      value={album.profile.romanizedName}
+                      onChange={(event) => updateProfile("romanizedName", event.target.value)}
+                    />
+                  </EditorField>
+                  <EditorField label="出生日期">
+                    <input
+                      className={inputClass}
+                      value={album.profile.birthDate}
+                      onChange={(event) => updateProfile("birthDate", event.target.value)}
+                    />
+                  </EditorField>
+                  <EditorField label="欢迎语">
+                    <input
+                      className={inputClass}
+                      value={album.profile.welcome}
+                      onChange={(event) => updateProfile("welcome", event.target.value)}
+                    />
+                  </EditorField>
                 </div>
-                <button
-                  type="button"
-                  onClick={addStory}
-                  className="flex min-h-10 w-full items-center justify-center gap-1 rounded-xl border border-dashed border-black/20 text-xs"
+              </EditorSection>
+
+              <EditorSection
+                title="动效与插画"
+                description="调整展示动画，或替换页面中预留的插画。"
+              >
+                <label className="flex min-h-12 items-center justify-between rounded-2xl bg-white/70 px-4 text-xs font-bold">
+                  <span>
+                    启用温柔动效
+                    <span className="mt-1 block font-normal text-neutral-400">
+                      关闭后保留静态排版，并继续尊重系统减少动画设置。
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={album.animationEnabled}
+                    onChange={(event) =>
+                      setAlbum((current) => ({
+                        ...current,
+                        animationEnabled: event.target.checked,
+                      }))
+                    }
+                    className="size-5 accent-black"
+                  />
+                </label>
+                <label className="mt-3 flex min-h-12 items-center justify-between gap-4 rounded-2xl bg-white/70 px-4 text-xs font-bold">
+                  <span>
+                    动画速度
+                    <span className="mt-1 block font-normal text-neutral-400">
+                      舒缓更适合阅读，标准节奏稍快。
+                    </span>
+                  </span>
+                  <select
+                    className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs"
+                    value={album.animationSpeed}
+                    onChange={(event) =>
+                      setAlbum((current) => ({
+                        ...current,
+                        animationSpeed: event.target.value as GrowthAlbum["animationSpeed"],
+                      }))
+                    }
+                  >
+                    <option value="slow">舒缓</option>
+                    <option value="normal">标准</option>
+                  </select>
+                </label>
+                <a
+                  href="/editor/theme"
+                  className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-black px-4 text-xs text-white"
                 >
-                  <Plus className="size-3.5" /> 新增故事
-                </button>
-              </div>
-              {story ? (
-                <div className="space-y-4 rounded-2xl bg-white/70 p-4">
-                  <EditorField label="所属章节">
+                  <Palette className="size-3.5" /> 自定义插画
+                </a>
+              </EditorSection>
+            </>
+          )}
+
+          {mode === "stories" && (
+            <>
+              <EditorSection
+                title="成长故事"
+                description={`当前共有 ${storyCount} 篇故事，可在受控结构内新增、修改和删除。`}
+              >
+                <div className="grid gap-4 sm:grid-cols-[170px_1fr]">
+                  <div className="space-y-3">
                     <select
                       className={inputClass}
-                      value={chapter.id}
-                      onChange={(event) => moveStory(event.target.value)}
+                      value={chapter?.id ?? ""}
+                      onChange={(event) => {
+                        const next = album.chapters.find((item) => item.id === event.target.value);
+                        setChapterId(event.target.value);
+                        setStoryId(next?.stories[0]?.id ?? "");
+                      }}
                     >
                       {album.chapters.map((item) => (
                         <option key={item.id} value={item.id}>
@@ -393,260 +374,301 @@ export function AlbumEditor() {
                         </option>
                       ))}
                     </select>
-                  </EditorField>
-                  <EditorField label="故事标题">
-                    <input
-                      className={inputClass}
-                      value={story.title}
-                      onChange={(event) => updateStory({ title: event.target.value })}
-                    />
-                  </EditorField>
-                  <EditorField label="故事日期">
-                    <input
-                      className={inputClass}
-                      value={story.date}
-                      onChange={(event) => updateStory({ date: event.target.value })}
-                    />
-                  </EditorField>
-                  <EditorField label="封面路径（仅保存相对路径或网络地址）">
-                    <input
-                      className={inputClass}
-                      value={story.cover}
-                      onChange={(event) => updateStory({ cover: event.target.value })}
-                    />
-                  </EditorField>
-                  <EditorField label="故事文字">
-                    <textarea
-                      rows={5}
-                      className={inputClass}
-                      value={story.note}
-                      onChange={(event) => updateStory({ note: event.target.value })}
-                    />
-                  </EditorField>
-                  <div className="grid gap-3 rounded-2xl bg-neutral-50 p-4 sm:grid-cols-2">
-                    <EditorField label="视频地址（可选，点击后才加载）">
-                      <input
-                        className={inputClass}
-                        value={story.videoUrl ?? ""}
-                        onChange={(event) =>
-                          updateStory({ videoUrl: event.target.value || undefined })
-                        }
-                        placeholder="./media/video/story.mp4"
-                      />
-                    </EditorField>
-                    <div>
-                      <p className="text-xs font-bold text-neutral-600">视频封面（可选）</p>
-                      <label className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-3 text-xs shadow-sm">
-                        <ImagePlus className="size-3.5" /> 上传视频封面
-                        <input
-                          type="file"
-                          accept="image/png,image/webp,image/jpeg"
-                          className="sr-only"
-                          onChange={(event) => {
-                            void uploadVideoPoster(event.target.files?.[0]);
-                            event.target.value = "";
-                          }}
-                        />
-                      </label>
+                    <div className="space-y-1.5">
+                      {chapter?.stories.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setStoryId(item.id)}
+                          className={`w-full rounded-xl px-3 py-2 text-left text-xs ${story?.id === item.id ? "bg-black text-white" : "bg-white hover:bg-white/70"}`}
+                        >
+                          <span className="block truncate font-bold">{item.title}</span>
+                          <span className="mt-0.5 block opacity-60">{item.date}</span>
+                        </button>
+                      ))}
                     </div>
+                    <button
+                      type="button"
+                      onClick={addStory}
+                      className="flex min-h-10 w-full items-center justify-center gap-1 rounded-xl border border-dashed border-black/20 text-xs"
+                    >
+                      <Plus className="size-3.5" /> 新增故事
+                    </button>
                   </div>
-                  <div className="rounded-2xl border border-dashed border-black/15 bg-white/70 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-bold">照片资源</p>
-                        <p className="mt-1 text-[10px] leading-4 text-neutral-400">
-                          JPG / PNG / WebP，单张不超过 12MB；自动生成三级 WebP 资源。
-                        </p>
-                      </div>
-                      <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-black px-3 text-xs text-white">
-                        <ImagePlus className="size-3.5" /> 上传照片
+                  {story ? (
+                    <div className="space-y-4 rounded-2xl bg-white/70 p-4">
+                      <EditorField label="所属章节">
+                        <select
+                          className={inputClass}
+                          value={chapter.id}
+                          onChange={(event) => moveStory(event.target.value)}
+                        >
+                          {album.chapters.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.title}
+                            </option>
+                          ))}
+                        </select>
+                      </EditorField>
+                      <EditorField label="故事标题">
                         <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          multiple
-                          className="sr-only"
-                          onChange={(event) => {
-                            void uploadImages(event.target.files);
-                            event.target.value = "";
-                          }}
+                          className={inputClass}
+                          value={story.title}
+                          onChange={(event) => updateStory({ title: event.target.value })}
                         />
-                      </label>
-                    </div>
-                    {uploadProgress !== null && (
-                      <div className="mt-4">
-                        <div className="mb-1 flex justify-between text-[10px] text-neutral-500">
-                          <span>正在压缩并生成资源</span>
-                          <span>{uploadProgress}%</span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-neutral-200">
-                          <div
-                            className="h-full rounded-full bg-neutral-800 transition-[width]"
-                            style={{ width: `${uploadProgress}%` }}
+                      </EditorField>
+                      <EditorField label="故事日期">
+                        <input
+                          className={inputClass}
+                          value={story.date}
+                          onChange={(event) => updateStory({ date: event.target.value })}
+                        />
+                      </EditorField>
+                      <EditorField label="封面路径（仅保存相对路径或网络地址）">
+                        <input
+                          className={inputClass}
+                          value={story.cover}
+                          onChange={(event) => updateStory({ cover: event.target.value })}
+                        />
+                      </EditorField>
+                      <EditorField label="故事文字">
+                        <textarea
+                          rows={5}
+                          className={inputClass}
+                          value={story.note}
+                          onChange={(event) => updateStory({ note: event.target.value })}
+                        />
+                      </EditorField>
+                      <div className="grid gap-3 rounded-2xl bg-neutral-50 p-4 sm:grid-cols-2">
+                        <EditorField label="视频地址（可选，点击后才加载）">
+                          <input
+                            className={inputClass}
+                            value={story.videoUrl ?? ""}
+                            onChange={(event) =>
+                              updateStory({ videoUrl: event.target.value || undefined })
+                            }
+                            placeholder="./media/video/story.mp4"
                           />
+                        </EditorField>
+                        <div>
+                          <p className="text-xs font-bold text-neutral-600">视频封面（可选）</p>
+                          <label className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-3 text-xs shadow-sm">
+                            <ImagePlus className="size-3.5" /> 上传视频封面
+                            <input
+                              type="file"
+                              accept="image/png,image/webp,image/jpeg"
+                              className="sr-only"
+                              onChange={(event) => {
+                                void uploadVideoPoster(event.target.files?.[0]);
+                                event.target.value = "";
+                              }}
+                            />
+                          </label>
                         </div>
                       </div>
-                    )}
-                    {imageMedia.length > 0 && (
-                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {imageMedia.map((item, index) => (
-                          <div
-                            key={item.id ?? index}
-                            className="group relative overflow-hidden rounded-xl bg-neutral-100"
-                          >
-                            <img
-                              src={getImageSource(item, "thumbnail")}
-                              alt={item.alt ?? "故事照片"}
-                              className="aspect-square w-full object-cover"
-                            />
-                            <div className="absolute inset-x-1 bottom-1 flex justify-center gap-1 rounded-lg bg-black/55 p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
-                              <button
-                                type="button"
-                                aria-label="前移照片"
-                                disabled={index === 0}
-                                onClick={() => reorderImage(index, -1)}
-                                className="grid size-7 place-items-center rounded-md bg-white/90 disabled:opacity-30"
-                              >
-                                <ArrowUp className="size-3" />
-                              </button>
-                              <button
-                                type="button"
-                                aria-label="后移照片"
-                                disabled={index === imageMedia.length - 1}
-                                onClick={() => reorderImage(index, 1)}
-                                className="grid size-7 place-items-center rounded-md bg-white/90 disabled:opacity-30"
-                              >
-                                <ArrowDown className="size-3" />
-                              </button>
-                              <button
-                                type="button"
-                                aria-label="删除照片"
-                                onClick={() => removeImage(index)}
-                                className="grid size-7 place-items-center rounded-md bg-red-50 text-red-600"
-                              >
-                                <Trash2 className="size-3" />
-                              </button>
-                            </div>
-                            {index === 0 && (
-                              <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[9px] font-bold">
-                                封面
-                              </span>
-                            )}
+                      <div className="rounded-2xl border border-dashed border-black/15 bg-white/70 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-bold">照片资源</p>
+                            <p className="mt-1 text-[10px] leading-4 text-neutral-400">
+                              JPG / PNG / WebP，单张不超过 12MB；自动生成三级 WebP 资源。
+                            </p>
                           </div>
-                        ))}
+                          <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-black px-3 text-xs text-white">
+                            <ImagePlus className="size-3.5" /> 上传照片
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              multiple
+                              className="sr-only"
+                              onChange={(event) => {
+                                void uploadImages(event.target.files);
+                                event.target.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
+                        {uploadProgress !== null && (
+                          <div className="mt-4">
+                            <div className="mb-1 flex justify-between text-[10px] text-neutral-500">
+                              <span>正在压缩并生成资源</span>
+                              <span>{uploadProgress}%</span>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-neutral-200">
+                              <div
+                                className="h-full rounded-full bg-neutral-800 transition-[width]"
+                                style={{ width: `${uploadProgress}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {imageMedia.length > 0 && (
+                          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            {imageMedia.map((item, index) => (
+                              <div
+                                key={item.id ?? index}
+                                className="group relative overflow-hidden rounded-xl bg-neutral-100"
+                              >
+                                <img
+                                  src={getImageSource(item, "thumbnail")}
+                                  alt={item.alt ?? "故事照片"}
+                                  className="aspect-square w-full object-cover"
+                                />
+                                <div className="absolute inset-x-1 bottom-1 flex justify-center gap-1 rounded-lg bg-black/55 p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+                                  <button
+                                    type="button"
+                                    aria-label="前移照片"
+                                    disabled={index === 0}
+                                    onClick={() => reorderImage(index, -1)}
+                                    className="grid size-7 place-items-center rounded-md bg-white/90 disabled:opacity-30"
+                                  >
+                                    <ArrowUp className="size-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-label="后移照片"
+                                    disabled={index === imageMedia.length - 1}
+                                    onClick={() => reorderImage(index, 1)}
+                                    className="grid size-7 place-items-center rounded-md bg-white/90 disabled:opacity-30"
+                                  >
+                                    <ArrowDown className="size-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-label="删除照片"
+                                    onClick={() => removeImage(index)}
+                                    className="grid size-7 place-items-center rounded-md bg-red-50 text-red-600"
+                                  >
+                                    <Trash2 className="size-3" />
+                                  </button>
+                                </div>
+                                {index === 0 && (
+                                  <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[9px] font-bold">
+                                    封面
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                      <button
+                        type="button"
+                        onClick={deleteStory}
+                        className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-xs text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="size-3.5" /> 删除这篇故事
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid min-h-52 place-items-center rounded-2xl border border-dashed border-black/10 text-xs text-neutral-400">
+                      这个章节还没有故事
+                    </div>
+                  )}
+                </div>
+              </EditorSection>
+
+              <EditorSection
+                title="配置导入与导出"
+                description="JSON 用于迁移配置；完整媒体交付包将在下一步生成 ZIP。"
+              >
+                <div className="flex flex-wrap gap-3">
                   <button
                     type="button"
-                    onClick={deleteStory}
-                    className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-xs text-red-600 hover:bg-red-50"
+                    onClick={exportJson}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-black px-4 text-xs text-white"
                   >
-                    <Trash2 className="size-3.5" /> 删除这篇故事
+                    <Download className="size-3.5" /> 导出 album.json
                   </button>
+                  <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-4 text-xs shadow-sm">
+                    <FileUp className="size-3.5" /> 导入 album.json
+                    <input
+                      type="file"
+                      accept="application/json,.json"
+                      className="sr-only"
+                      onChange={(event) => {
+                        void importJson(event.target.files?.[0]);
+                        event.target.value = "";
+                      }}
+                    />
+                  </label>
                 </div>
-              ) : (
-                <div className="grid min-h-52 place-items-center rounded-2xl border border-dashed border-black/10 text-xs text-neutral-400">
-                  这个章节还没有故事
-                </div>
-              )}
-            </div>
-          </EditorSection>
+                {editorMessage && (
+                  <p
+                    role="status"
+                    className="mt-4 rounded-xl bg-neutral-100 px-3 py-2 text-xs text-neutral-600"
+                  >
+                    {editorMessage}
+                  </p>
+                )}
+              </EditorSection>
 
-          <EditorSection
-            title="配置导入与导出"
-            description="JSON 用于迁移配置；完整媒体交付包将在下一步生成 ZIP。"
-          >
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={exportJson}
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-black px-4 text-xs text-white"
-              >
-                <Download className="size-3.5" /> 导出 album.json
-              </button>
-              <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-4 text-xs shadow-sm">
-                <FileUp className="size-3.5" /> 导入 album.json
-                <input
-                  type="file"
-                  accept="application/json,.json"
-                  className="sr-only"
-                  onChange={(event) => {
-                    void importJson(event.target.files?.[0]);
-                    event.target.value = "";
-                  }}
-                />
-              </label>
-            </div>
-            {editorMessage && (
-              <p
-                role="status"
-                className="mt-4 rounded-xl bg-neutral-100 px-3 py-2 text-xs text-neutral-600"
-              >
-                {editorMessage}
-              </p>
-            )}
-          </EditorSection>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-xs text-amber-900">恢复演示数据会覆盖当前本地草稿。</p>
-            <button
-              type="button"
-              onClick={() => window.confirm("确定恢复默认演示数据吗？") && reset()}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-3 text-xs shadow-sm"
-            >
-              <RotateCcw className="size-3.5" /> 恢复演示数据
-            </button>
-          </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-xs text-amber-900">恢复演示数据会覆盖当前本地草稿。</p>
+                <button
+                  type="button"
+                  onClick={() => window.confirm("确定恢复默认演示数据吗？") && reset()}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-3 text-xs shadow-sm"
+                >
+                  <RotateCcw className="size-3.5" /> 恢复演示数据
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <div className="overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-black/5 px-5 py-3">
-              <div>
-                <p className="text-[10px] tracking-[.2em] text-neutral-400">LIVE PREVIEW</p>
-                <p className="text-sm font-bold">实时预览</p>
+        {mode === "profile" && (
+          <aside className="mt-5">
+            <div className="overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-black/5 px-5 py-3">
+                <div>
+                  <p className="text-[10px] tracking-[.2em] text-neutral-400">LIVE PREVIEW</p>
+                  <p className="text-sm font-bold">实时预览</p>
+                </div>
+                <a
+                  href="/preview"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full bg-black px-3 py-2 text-[10px] text-white"
+                >
+                  打开完整网站
+                </a>
               </div>
-              <a
-                href="/preview"
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-full bg-black px-3 py-2 text-[10px] text-white"
-              >
-                打开完整网站
-              </a>
-            </div>
-            <div
-              className="relative min-h-[520px] overflow-hidden p-7 text-center"
-              data-album-theme="scrapbook"
-              style={{ background: "var(--paper)", color: "var(--ink)" }}
-            >
               <div
-                className="absolute inset-x-0 top-0 h-2"
-                style={{ background: `linear-gradient(90deg, ${activeTheme.swatches.join(",")})` }}
-              />
-              <p className="mt-12 text-[9px] tracking-[.3em] text-neutral-400">
-                {activeTheme.englishName}
-              </p>
-              <h2 className="mt-4 pl-[.35em] text-3xl font-bold tracking-[.35em]">
-                {album.profile.displayName || "宝宝姓名"}
-              </h2>
-              <p className="mt-2 text-[10px] tracking-[.25em] text-neutral-500">
-                {album.profile.romanizedName}
-              </p>
-              <div
-                className="mx-auto mt-10 grid size-40 place-items-center rounded-[40%_60%_48%_52%] text-6xl"
-                style={{ background: `${activeTheme.swatches[1]}35` }}
+                className="relative min-h-[520px] overflow-hidden p-7 text-center"
+                data-album-theme="scrapbook"
+                style={{ background: "var(--paper)", color: "var(--ink)" }}
               >
-                {activeTheme.motif}
+                <div
+                  className="absolute inset-x-0 top-0 h-2"
+                  style={{
+                    background: `linear-gradient(90deg, ${activeTheme.swatches.join(",")})`,
+                  }}
+                />
+                <p className="mt-12 text-[9px] tracking-[.3em] text-neutral-400">
+                  {activeTheme.englishName}
+                </p>
+                <h2 className="mt-4 pl-[.35em] text-3xl font-bold tracking-[.35em]">
+                  {album.profile.displayName || "宝宝姓名"}
+                </h2>
+                <p className="mt-2 text-[10px] tracking-[.25em] text-neutral-500">
+                  {album.profile.romanizedName}
+                </p>
+                <div
+                  className="mx-auto mt-10 grid size-40 place-items-center rounded-[40%_60%_48%_52%] text-6xl"
+                  style={{ background: `${activeTheme.swatches[1]}35` }}
+                >
+                  {activeTheme.motif}
+                </div>
+                <p className="mt-8 text-xs text-neutral-500">{album.profile.birthDate}</p>
+                <p className="mx-auto mt-5 max-w-xs text-sm leading-7">{album.profile.welcome}</p>
+                <p className="mt-10 text-[10px] tracking-[.25em] text-neutral-400">
+                  {storyCount} STORIES · {album.chapters.length} CHAPTERS
+                </p>
               </div>
-              <p className="mt-8 text-xs text-neutral-500">{album.profile.birthDate}</p>
-              <p className="mx-auto mt-5 max-w-xs text-sm leading-7">{album.profile.welcome}</p>
-              <p className="mt-10 text-[10px] tracking-[.25em] text-neutral-400">
-                {storyCount} STORIES · {album.chapters.length} CHAPTERS
-              </p>
             </div>
-          </div>
-        </aside>
+          </aside>
+        )}
       </div>
     </main>
   );

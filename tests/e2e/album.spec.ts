@@ -82,6 +82,18 @@ test("主界面提供两个独立编辑入口，旧地址自动兼容", async ({
   await expect(page).toHaveURL(/\/editor\/profile$/);
   await page.goto("/editor/stories");
   await expect(page).toHaveURL(/\/editor\/stories$/);
+  await expect(page.getByRole("heading", { name: "成长故事" }).first()).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "宝宝姓名" })).toHaveCount(0);
+
+  await page.goto("/editor/profile");
+  await expect(page.getByRole("textbox", { name: "宝宝姓名" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "新增故事" })).toHaveCount(0);
+  const editorNavigation = page.getByRole("navigation", { name: "主要页面导航" });
+  await expect(editorNavigation.getByRole("link")).toHaveCount(4);
+  await expect(editorNavigation.getByRole("link", { name: "宝宝资料" })).toHaveClass(/bg-black/);
+  await editorNavigation.getByRole("link", { name: "成长章节" }).click();
+  await expect(page).toHaveURL(/\/#chapters$/);
+  await expect(page.getByTestId("chapter-birth")).toBeVisible();
 });
 
 for (const width of [320, 375, 390, 430, 768, 1280]) {
@@ -92,16 +104,18 @@ for (const width of [320, 375, 390, 430, 768, 1280]) {
       () => document.documentElement.scrollWidth - window.innerWidth,
     );
     expect(homeOverflow).toBeLessThanOrEqual(1);
-    await page.goto("/editor");
-    const editorOverflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - window.innerWidth,
-    );
-    expect(editorOverflow).toBeLessThanOrEqual(1);
+    for (const editorPath of ["/editor/profile", "/editor/stories"]) {
+      await page.goto(editorPath);
+      const editorOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
+      expect(editorOverflow).toBeLessThanOrEqual(1);
+    }
   });
 }
 
 test("图片缺失时显示占位并保持页面可用", async ({ page }) => {
-  await page.goto("/editor");
+  await page.goto("/editor/stories");
   await page
     .getByRole("textbox", { name: "封面路径（仅保存相对路径或网络地址）" })
     .fill("/missing-test-image.jpg");
@@ -122,7 +136,7 @@ test("章节、故事和预览深链接可以直接打开", async ({ page }) => 
 });
 
 test("上传照片会生成三级资源并可排序删除", async ({ page }) => {
-  await page.goto("/editor");
+  await page.goto("/editor/stories");
   const upload = page.locator('input[type="file"][multiple][accept*="image/jpeg"]');
   await upload.setInputFiles(fixtureImage);
   await expect(page.getByRole("status")).toContainText("已生成 1 张图片", { timeout: 20_000 });

@@ -39,6 +39,7 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
   const [chapterId, setChapterId] = useState<string | null>(initialChapterId ?? null);
   const [activeStory, setActiveStory] = useState<ActiveStory>(null);
   const [viewer, setViewer] = useState<ViewerState>(null);
+  const [navigationView, setNavigationView] = useState<"home" | "chapters">("home");
 
   const chapter = chapterId ? (album.chapters.find((item) => item.id === chapterId) ?? null) : null;
   const storyChapter = activeStory
@@ -96,7 +97,17 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
     return () => cancelAnimationFrame(frame);
   }, [chapterId]);
 
+  useEffect(() => {
+    if (window.location.hash !== "#chapters") return;
+    setNavigationView("chapters");
+    const frame = requestAnimationFrame(() =>
+      chaptersRef.current?.scrollIntoView({ behavior: "auto", block: "start" }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   const scrollToDirectory = () => {
+    setNavigationView("chapters");
     if (chapterId) setChapterId(null);
     requestAnimationFrame(() =>
       chaptersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -104,18 +115,21 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
   };
 
   const goHome = () => {
+    setNavigationView("home");
     setChapterId(null);
     setActiveStory(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const openChapter = (id: string) => {
+    setNavigationView("chapters");
     directoryScrollPositionRef.current = window.scrollY;
     setChapterId(id);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const returnToDirectory = () => {
+    setNavigationView("chapters");
     shouldRestoreDirectoryRef.current = true;
     setChapterId(null);
   };
@@ -135,7 +149,11 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
       className="min-h-screen w-full overflow-x-hidden"
       style={{ fontFamily: "'Noto Serif SC', serif", color: "var(--ink)" }}
     >
-      <AlbumNavigation onHome={goHome} onOpenDirectory={scrollToDirectory} />
+      <AlbumNavigation
+        active={navigationView}
+        onHome={goHome}
+        onOpenDirectory={scrollToDirectory}
+      />
 
       <AnimatePresence mode="wait">
         {chapter ? (

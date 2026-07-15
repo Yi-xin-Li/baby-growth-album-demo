@@ -1,32 +1,51 @@
 type AlbumNavigationProps = {
-  onHome: () => void;
-  onOpenDirectory: () => void;
+  active: "home" | "chapters" | "profile" | "stories";
+  onHome?: () => void;
+  onOpenDirectory?: () => void;
 };
 
-export function AlbumNavigation({ onHome, onOpenDirectory }: AlbumNavigationProps) {
+const baseClass =
+  "grid min-h-9 place-items-center rounded-full px-3 py-1.5 text-[11px] transition sm:min-w-24";
+
+export function AlbumNavigation({ active, onHome, onOpenDirectory }: AlbumNavigationProps) {
+  const itemClass = (id: AlbumNavigationProps["active"]) =>
+    `${baseClass} ${active === id ? "bg-black text-white shadow-md" : "bg-white/75 text-neutral-600 shadow-sm hover:bg-white"}`;
+
   return (
     <nav
-      className="fixed inset-x-0 top-0 z-30 flex items-center justify-end gap-2 px-3 py-3 text-[12px] sm:gap-4 sm:px-5 sm:text-[13px]"
-      style={{ background: "linear-gradient(to bottom, var(--paper) 70%, transparent)" }}
+      aria-label="主要页面导航"
+      className="fixed inset-x-0 top-0 z-40 px-3 py-2 backdrop-blur-md"
+      style={{
+        background:
+          "linear-gradient(to bottom, color-mix(in srgb, var(--paper) 94%, transparent) 78%, transparent)",
+      }}
     >
-      <button type="button" onClick={onHome} className="hover:opacity-70">
-        首页
-      </button>
-      <button type="button" onClick={onOpenDirectory} className="hover:opacity-70">
-        时光轴 ▾
-      </button>
-      <a
-        href="/editor/profile"
-        className="rounded-full border border-black/5 bg-white/65 px-2.5 py-1.5 text-[10px] shadow-sm hover:bg-white sm:px-3 sm:text-[11px]"
-      >
-        宝宝资料
-      </a>
-      <a
-        href="/editor/stories"
-        className="rounded-full border border-black/5 bg-white/65 px-2.5 py-1.5 text-[10px] shadow-sm hover:bg-white sm:px-3 sm:text-[11px]"
-      >
-        成长故事
-      </a>
+      <div className="mx-auto grid max-w-md grid-cols-2 gap-1.5 sm:max-w-xl sm:grid-cols-4 sm:gap-2">
+        {onHome ? (
+          <button type="button" onClick={onHome} className={itemClass("home")}>
+            首页
+          </button>
+        ) : (
+          <a href="/" className={itemClass("home")}>
+            首页
+          </a>
+        )}
+        {onOpenDirectory ? (
+          <button type="button" onClick={onOpenDirectory} className={itemClass("chapters")}>
+            成长章节
+          </button>
+        ) : (
+          <a href="/#chapters" className={itemClass("chapters")}>
+            成长章节
+          </a>
+        )}
+        <a href="/editor/profile" className={itemClass("profile")}>
+          宝宝资料
+        </a>
+        <a href="/editor/stories" className={itemClass("stories")}>
+          成长故事
+        </a>
+      </div>
     </nav>
   );
 }
