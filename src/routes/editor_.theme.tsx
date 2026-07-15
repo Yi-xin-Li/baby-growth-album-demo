@@ -20,7 +20,6 @@ const slotDetails: Array<{
   { id: "coverHero", name: "封面主插画", recommendation: "竖版透明图，建议 1200 × 1500" },
   { id: "coverDecoration", name: "封面小装饰", recommendation: "透明图，建议 600 × 600" },
   { id: "pageTexture", name: "页面背景纹理", recommendation: "可平铺纹理，建议 1200 × 1200" },
-  { id: "chapterIcon", name: "章节图标", recommendation: "方形透明图，建议 512 × 512" },
   { id: "timelineMarker", name: "时间轴节点", recommendation: "小型透明图，建议 256 × 256" },
   { id: "cardDecoration", name: "卡片角落装饰", recommendation: "横版透明图，建议 600 × 300" },
   { id: "noteDecoration", name: "便签装饰", recommendation: "透明图，建议 500 × 500" },

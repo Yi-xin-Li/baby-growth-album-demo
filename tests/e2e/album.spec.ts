@@ -19,6 +19,7 @@ test("访客可以完成章节、故事和高清查看流程", async ({ page }) 
   await page.goto("/");
   await expect(page.locator("main")).toHaveAttribute("data-album-theme", "scrapbook");
   await expect(page.getByText("选择主题")).toHaveCount(0);
+  await expect(page.getByTestId("chapter-birth").locator("img")).toHaveCount(1);
 
   await page.getByTestId("chapter-birth").click();
   await expect(page.getByRole("heading", { name: "诞生记忆" })).toBeVisible();
