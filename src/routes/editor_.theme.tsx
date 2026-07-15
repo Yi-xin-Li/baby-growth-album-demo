@@ -3,7 +3,7 @@ import { ArrowLeft, ImagePlus, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { useAlbumDraft } from "@/hooks/use-album-draft";
 import { processIllustration } from "@/lib/illustration-processing";
-import { albumThemes } from "@/themes/album-themes";
+import { albumThemeList, albumThemes } from "@/themes/album-themes";
 import type { IllustrationSlotId } from "@/types/album";
 
 export const Route = createFileRoute("/editor_/theme")({
@@ -31,6 +31,17 @@ function ThemeEditor() {
   const { album, setAlbum, status } = useAlbumDraft();
   const [message, setMessage] = useState("");
   const theme = albumThemes[album.theme];
+
+  if (status === "loading") {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#f4f1eb] text-[#2e2a25]">
+        <div className="text-center">
+          <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-black/10 border-t-black" />
+          <p className="mt-4 text-sm font-bold">正在读取主题设置</p>
+        </div>
+      </main>
+    );
+  }
 
   const setIllustration = (slotId: IllustrationSlotId, value?: string) => {
     setAlbum((current) => {
@@ -119,6 +130,18 @@ function ThemeEditor() {
                       已自定义
                     </span>
                   )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {albumThemeList.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setIllustration(slot.id, preset.illustrations[slot.id])}
+                      className="rounded-full border border-black/10 px-2.5 py-1 text-[9px] hover:bg-neutral-50"
+                    >
+                      {preset.motif} {preset.name}
+                    </button>
+                  ))}
                 </div>
                 <div className="mt-4 flex gap-2">
                   <label className="inline-flex min-h-10 flex-1 cursor-pointer items-center justify-center gap-1 rounded-xl bg-black px-3 text-[10px] text-white">

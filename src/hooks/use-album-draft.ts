@@ -8,14 +8,23 @@ export function useAlbumDraft() {
   const [album, setAlbumState] = useState<GrowthAlbum>(cloneDemoAlbum);
   const [status, setStatus] = useState<SaveStatus>("loading");
   const readyRef = useRef(false);
+  const dirtyBeforeReadyRef = useRef(false);
+  const latestAlbumRef = useRef(album);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     loadAlbumDraft()
       .then((draft) => {
-        setAlbumState(draft);
         readyRef.current = true;
-        setStatus("saved");
+        if (dirtyBeforeReadyRef.current) {
+          saveAlbumDraft(latestAlbumRef.current)
+            .then(() => setStatus("saved"))
+            .catch(() => setStatus("error"));
+        } else {
+          latestAlbumRef.current = draft;
+          setAlbumState(draft);
+          setStatus("saved");
+        }
       })
       .catch(() => {
         readyRef.current = true;
@@ -24,7 +33,10 @@ export function useAlbumDraft() {
 
     const receiveDraft = (event: Event) => {
       const nextAlbum = (event as CustomEvent<GrowthAlbum>).detail;
-      if (nextAlbum) setAlbumState(structuredClone(nextAlbum));
+      if (nextAlbum) {
+        latestAlbumRef.current = structuredClone(nextAlbum);
+        setAlbumState(latestAlbumRef.current);
+      }
     };
     window.addEventListener("album-draft-updated", receiveDraft);
     return () => {
@@ -36,7 +48,12 @@ export function useAlbumDraft() {
   const setAlbum = useCallback((updater: (current: GrowthAlbum) => GrowthAlbum) => {
     setAlbumState((current) => {
       const nextAlbum = updater(current);
-      if (!readyRef.current) return nextAlbum;
+      latestAlbumRef.current = nextAlbum;
+      if (!readyRef.current) {
+        dirtyBeforeReadyRef.current = true;
+        setStatus("saving");
+        return nextAlbum;
+      }
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       setStatus("saving");
       saveTimerRef.current = setTimeout(() => {
@@ -51,6 +68,7 @@ export function useAlbumDraft() {
   const reset = useCallback(async () => {
     setStatus("saving");
     const nextAlbum = await resetAlbumDraft();
+    latestAlbumRef.current = nextAlbum;
     setAlbumState(nextAlbum);
     setStatus("saved");
   }, []);

@@ -27,10 +27,15 @@ export const Route = createFileRoute("/")({
 
 type ActiveStory = { chapterId: string; storyIndex: number } | null;
 
-function AlbumPage() {
+type AlbumPageProps = {
+  initialChapterId?: string;
+  initialStoryId?: string;
+};
+
+export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps = {}) {
   const { album, setAlbum } = useAlbumDraft();
   const chaptersRef = useRef<HTMLElement | null>(null);
-  const [chapterId, setChapterId] = useState<string | null>(null);
+  const [chapterId, setChapterId] = useState<string | null>(initialChapterId ?? null);
   const [activeStory, setActiveStory] = useState<ActiveStory>(null);
   const [viewer, setViewer] = useState<ViewerState>(null);
 
@@ -45,6 +50,11 @@ function AlbumPage() {
   const activeTheme = {
     ...themeDefaults,
     illustrations: { ...themeDefaults.illustrations, ...album.customIllustrations },
+    motion: {
+      ...themeDefaults.motion,
+      timelineDuration:
+        themeDefaults.motion.timelineDuration * (album.animationSpeed === "slow" ? 1.3 : 1),
+    },
   };
   const storyCount = album.chapters.reduce(
     (total, currentChapter) => total + currentChapter.stories.length,
@@ -59,6 +69,18 @@ function AlbumPage() {
       document.body.style.overflow = originalOverflow;
     };
   }, [activeStory, viewer]);
+
+  useEffect(() => {
+    if (!initialStoryId) return;
+    for (const currentChapter of album.chapters) {
+      const storyIndex = currentChapter.stories.findIndex((item) => item.id === initialStoryId);
+      if (storyIndex >= 0) {
+        setChapterId(currentChapter.id);
+        setActiveStory({ chapterId: currentChapter.id, storyIndex });
+        break;
+      }
+    }
+  }, [album.chapters, initialStoryId]);
 
   const scrollToDirectory = () => {
     if (chapterId) setChapterId(null);

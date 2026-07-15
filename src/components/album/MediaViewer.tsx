@@ -42,6 +42,7 @@ export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
     <AnimatePresence>
       {state && item && (
         <motion.div
+          data-testid="media-viewer"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

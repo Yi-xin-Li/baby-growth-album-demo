@@ -9,10 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as EditorRouteImport } from './routes/editor'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StoryStoryIdRouteImport } from './routes/story.$storyId'
 import { Route as EditorThemeRouteImport } from './routes/editor_.theme'
+import { Route as ChapterChapterIdRouteImport } from './routes/chapter.$chapterId'
 
+const PreviewRoute = PreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EditorRoute = EditorRouteImport.update({
   id: '/editor',
   path: '/editor',
@@ -23,44 +31,92 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoryStoryIdRoute = StoryStoryIdRouteImport.update({
+  id: '/story/$storyId',
+  path: '/story/$storyId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EditorThemeRoute = EditorThemeRouteImport.update({
   id: '/editor_/theme',
   path: '/editor/theme',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChapterChapterIdRoute = ChapterChapterIdRouteImport.update({
+  id: '/chapter/$chapterId',
+  path: '/chapter/$chapterId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/editor': typeof EditorRoute
+  '/preview': typeof PreviewRoute
+  '/chapter/$chapterId': typeof ChapterChapterIdRoute
   '/editor/theme': typeof EditorThemeRoute
+  '/story/$storyId': typeof StoryStoryIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/editor': typeof EditorRoute
+  '/preview': typeof PreviewRoute
+  '/chapter/$chapterId': typeof ChapterChapterIdRoute
   '/editor/theme': typeof EditorThemeRoute
+  '/story/$storyId': typeof StoryStoryIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/editor': typeof EditorRoute
+  '/preview': typeof PreviewRoute
+  '/chapter/$chapterId': typeof ChapterChapterIdRoute
   '/editor_/theme': typeof EditorThemeRoute
+  '/story/$storyId': typeof StoryStoryIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/editor' | '/editor/theme'
+  fullPaths:
+    | '/'
+    | '/editor'
+    | '/preview'
+    | '/chapter/$chapterId'
+    | '/editor/theme'
+    | '/story/$storyId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/editor' | '/editor/theme'
-  id: '__root__' | '/' | '/editor' | '/editor_/theme'
+  to:
+    | '/'
+    | '/editor'
+    | '/preview'
+    | '/chapter/$chapterId'
+    | '/editor/theme'
+    | '/story/$storyId'
+  id:
+    | '__root__'
+    | '/'
+    | '/editor'
+    | '/preview'
+    | '/chapter/$chapterId'
+    | '/editor_/theme'
+    | '/story/$storyId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EditorRoute: typeof EditorRoute
+  PreviewRoute: typeof PreviewRoute
+  ChapterChapterIdRoute: typeof ChapterChapterIdRoute
   EditorThemeRoute: typeof EditorThemeRoute
+  StoryStoryIdRoute: typeof StoryStoryIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/preview': {
+      id: '/preview'
+      path: '/preview'
+      fullPath: '/preview'
+      preLoaderRoute: typeof PreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/editor': {
       id: '/editor'
       path: '/editor'
@@ -75,11 +131,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/story/$storyId': {
+      id: '/story/$storyId'
+      path: '/story/$storyId'
+      fullPath: '/story/$storyId'
+      preLoaderRoute: typeof StoryStoryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/editor_/theme': {
       id: '/editor_/theme'
       path: '/editor/theme'
       fullPath: '/editor/theme'
       preLoaderRoute: typeof EditorThemeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chapter/$chapterId': {
+      id: '/chapter/$chapterId'
+      path: '/chapter/$chapterId'
+      fullPath: '/chapter/$chapterId'
+      preLoaderRoute: typeof ChapterChapterIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -88,7 +158,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EditorRoute: EditorRoute,
+  PreviewRoute: PreviewRoute,
+  ChapterChapterIdRoute: ChapterChapterIdRoute,
   EditorThemeRoute: EditorThemeRoute,
+  StoryStoryIdRoute: StoryStoryIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

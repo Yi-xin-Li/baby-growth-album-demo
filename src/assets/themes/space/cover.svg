@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 950">
+  <defs><linearGradient id="s" x2="0" y2="1"><stop stop-color="#25284b"/><stop offset="1" stop-color="#666f9d"/></linearGradient></defs>
+  <rect width="800" height="950" rx="60" fill="url(#s)"/>
+  <g fill="#fff3c9"><circle cx="120" cy="150" r="9"/><circle cx="660" cy="220" r="7"/><circle cx="190" cy="690" r="8"/><circle cx="620" cy="740" r="10"/><circle cx="535" cy="105" r="6"/></g>
+  <circle cx="400" cy="440" r="220" fill="#8992c1" opacity=".35" stroke="#f4d58b" stroke-width="5"/>
+  <path d="M400 255q125 130 0 390-125-260 0-390z" fill="#f7f1e8" stroke="#2f3157" stroke-width="9"/>
+  <circle cx="400" cy="405" r="65" fill="#91b8cc" stroke="#2f3157" stroke-width="9"/>
+  <path d="M335 545l-85 115 130-40M465 545l85 115-130-40" fill="#e5b96f" stroke="#2f3157" stroke-width="9"/>
+  <path d="M370 650l30 115 30-115" fill="#f09a6d"/>
+  <ellipse cx="400" cy="790" rx="245" ry="38" fill="none" stroke="#f4d58b" stroke-width="8" opacity=".7"/>
+  <text x="400" y="875" text-anchor="middle" font-family="serif" font-size="38" fill="#fff3c9">STARRY ADVENTURE</text>
+</svg>

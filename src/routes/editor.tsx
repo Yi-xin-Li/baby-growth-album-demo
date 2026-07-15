@@ -52,6 +52,18 @@ function AlbumEditor() {
     [album.chapters],
   );
 
+  if (status === "loading") {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#f4f1eb] text-[#2e2a25]">
+        <div className="text-center">
+          <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-black/10 border-t-black" />
+          <p className="mt-4 text-sm font-bold">正在读取本地草稿</p>
+          <p className="mt-1 text-xs text-neutral-400">读取完成后再开始编辑，避免内容被覆盖。</p>
+        </div>
+      </main>
+    );
+  }
+
   const updateProfile = (key: keyof GrowthAlbum["profile"], value: string) => {
     setAlbum((current) => ({
       ...current,
@@ -312,6 +324,27 @@ function AlbumEditor() {
                 }
                 className="size-5 accent-black"
               />
+            </label>
+            <label className="mt-3 flex min-h-12 items-center justify-between gap-4 rounded-2xl bg-white/70 px-4 text-xs font-bold">
+              <span>
+                动画速度
+                <span className="mt-1 block font-normal text-neutral-400">
+                  舒缓更适合阅读，标准节奏稍快。
+                </span>
+              </span>
+              <select
+                className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs"
+                value={album.animationSpeed}
+                onChange={(event) =>
+                  setAlbum((current) => ({
+                    ...current,
+                    animationSpeed: event.target.value as GrowthAlbum["animationSpeed"],
+                  }))
+                }
+              >
+                <option value="slow">舒缓</option>
+                <option value="normal">标准</option>
+              </select>
             </label>
             <a
               href="/editor/theme"
@@ -591,7 +624,7 @@ function AlbumEditor() {
                 <p className="text-sm font-bold">实时预览</p>
               </div>
               <a
-                href="/"
+                href="/preview"
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-full bg-black px-3 py-2 text-[10px] text-white"

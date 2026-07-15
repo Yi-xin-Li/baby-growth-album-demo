@@ -74,6 +74,7 @@ export function ChapterTimeline({ chapter, theme, onBack, onOpenStory }: Chapter
             const mediaCount = 1 + story.thumbs.length + story.extraCount;
             return (
               <motion.button
+                data-testid={`story-${story.id}`}
                 key={story.id}
                 type="button"
                 onClick={() => onOpenStory(story, index)}
@@ -90,7 +91,11 @@ export function ChapterTimeline({ chapter, theme, onBack, onOpenStory }: Chapter
                   className="absolute -left-[30px] top-3 w-7 h-7 rounded-full flex items-center justify-center text-sm"
                   style={{ background: chapter.bg }}
                 >
-                  {chapter.smallIcon}
+                  <SafeImage
+                    src={theme.illustrations.timelineMarker}
+                    alt=""
+                    className="size-6 rounded-full object-contain"
+                  />
                 </div>
                 <div className="mb-3 flex items-start justify-between gap-3 px-1 pt-1">
                   <div>

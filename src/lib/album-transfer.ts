@@ -14,6 +14,7 @@ const albumSchema = z
     }),
     theme: z.enum(["scrapbook", "forest", "space"]),
     animationEnabled: z.boolean(),
+    animationSpeed: z.enum(["slow", "normal"]).default("slow"),
     chapters: z.array(
       z
         .object({

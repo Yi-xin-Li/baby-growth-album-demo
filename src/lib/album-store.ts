@@ -5,9 +5,18 @@ import type { GrowthAlbum } from "@/types/album";
 const databaseName = "baby-growth-album";
 const storeName = "drafts";
 const draftKey = "active-album";
+const localMirrorKey = "baby-growth-album-draft";
 
 export function cloneDemoAlbum(): GrowthAlbum {
   return structuredClone(demoAlbum);
+}
+
+function normalizeAlbum(album: GrowthAlbum): GrowthAlbum {
+  return {
+    ...album,
+    animationSpeed: album.animationSpeed ?? "slow",
+    customIllustrations: album.customIllustrations ?? {},
+  };
 }
 
 async function getDatabase() {
@@ -20,11 +29,23 @@ async function getDatabase() {
 
 export async function loadAlbumDraft(): Promise<GrowthAlbum> {
   if (typeof window === "undefined") return cloneDemoAlbum();
+  try {
+    const mirrored = window.localStorage.getItem(localMirrorKey);
+    if (mirrored) return normalizeAlbum(JSON.parse(mirrored) as GrowthAlbum);
+  } catch {
+    // IndexedDB remains the source when storage is disabled or the mirror exceeds quota.
+  }
   const database = await getDatabase();
-  return (await database.get(storeName, draftKey)) ?? cloneDemoAlbum();
+  const stored = (await database.get(storeName, draftKey)) as GrowthAlbum | undefined;
+  return stored ? normalizeAlbum(stored) : cloneDemoAlbum();
 }
 
 export async function saveAlbumDraft(album: GrowthAlbum) {
+  try {
+    window.localStorage.setItem(localMirrorKey, JSON.stringify(album));
+  } catch {
+    // Large temporary media may exceed localStorage; IndexedDB still stores the draft.
+  }
   const database = await getDatabase();
   await database.put(storeName, structuredClone(album), draftKey);
   window.dispatchEvent(new CustomEvent("album-draft-updated", { detail: album }));

@@ -74,6 +74,7 @@ export type GrowthAlbum = {
   profile: AlbumProfile;
   theme: ThemeId;
   animationEnabled: boolean;
+  animationSpeed: "slow" | "normal";
   customIllustrations?: Partial<Record<IllustrationSlotId, string>>;
   chapters: Chapter[];
 };

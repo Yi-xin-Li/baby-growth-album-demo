@@ -34,7 +34,11 @@ export function ThemeArtwork({ theme, className = "" }: ThemeArtworkProps) {
                 ? { rotate: [-8, 8, -8], y: [0, -4, 0] }
                 : { y: [0, -7, 0], rotate: [-4, 4, -4] }
           }
-          transition={{ duration: 3 + index * 0.45, repeat: Infinity, ease: "easeInOut" }}
+          transition={{
+            duration: (3 + index * 0.45) * theme.motion.timelineDuration,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
         >
           {mark}
         </motion.span>

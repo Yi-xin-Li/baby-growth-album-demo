@@ -36,6 +36,7 @@ export function StoryDetailModal({
           onClick={onClose}
         >
           <motion.article
+            data-testid="story-detail"
             key={story.id}
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -69,6 +70,7 @@ export function StoryDetailModal({
               </div>
 
               <button
+                data-testid="story-hero-media"
                 type="button"
                 onClick={() => onOpenMedia(0)}
                 className="relative mt-5 block w-full rounded-2xl overflow-hidden shadow-md group"

@@ -15,6 +15,7 @@ export function ThemeSwitcher({ value, onChange }: ThemeSwitcherProps) {
   return (
     <>
       <button
+        data-testid="theme-switcher"
         type="button"
         onClick={() => setOpen(true)}
         className="fixed bottom-5 right-5 z-40 flex min-h-11 items-center gap-2 rounded-full border border-black/10 bg-white/90 px-4 py-2 text-xs shadow-lg backdrop-blur"
@@ -59,6 +60,7 @@ export function ThemeSwitcher({ value, onChange }: ThemeSwitcherProps) {
                   const selected = theme.id === value;
                   return (
                     <button
+                      data-testid={`theme-option-${theme.id}`}
                       key={theme.id}
                       type="button"
                       onClick={() => {

@@ -145,6 +145,8 @@
 }
 
 [data-album-theme="scrapbook"] {
+  --album-display-font: "Long Cang", "Noto Serif SC", serif;
+  --paper-texture: repeating-linear-gradient(0deg, transparent 0 27px, rgb(120 90 70 / 0.035) 28px);
   --ink: oklch(0.29 0.025 55);
   --paper: oklch(0.985 0.012 82);
   --chapter-bg: oklch(0.95 0.05 112);
@@ -159,6 +161,12 @@
 }
 
 [data-album-theme="forest"] {
+  --album-display-font: "Noto Serif SC", serif;
+  --paper-texture: radial-gradient(
+    circle at 15% 20%,
+    rgb(120 160 105 / 0.08) 0 3px,
+    transparent 4px
+  );
   --ink: oklch(0.3 0.035 135);
   --paper: oklch(0.98 0.015 100);
   --chapter-bg: oklch(0.93 0.055 132);
@@ -173,6 +181,8 @@
 }
 
 [data-album-theme="space"] {
+  --album-display-font: "Caveat", "Noto Serif SC", serif;
+  --paper-texture: radial-gradient(circle, rgb(105 110 165 / 0.14) 0 1.5px, transparent 2px);
   --ink: oklch(0.29 0.055 275);
   --paper: oklch(0.97 0.018 280);
   --chapter-bg: oklch(0.91 0.055 275);
@@ -184,6 +194,16 @@
   --c-explore: oklch(0.87 0.07 275);
   --c-adventure: oklch(0.85 0.08 295);
   --c-continue: oklch(0.92 0.06 70);
+}
+
+[data-album-theme] section {
+  background-image: var(--paper-texture) !important;
+  background-size: 32px 32px;
+}
+
+[data-album-theme] h1,
+[data-album-theme] h2 {
+  font-family: var(--album-display-font);
 }
 
 [data-animation-enabled="false"] *,
