@@ -30,6 +30,8 @@ test("访客可以完成章节、故事和高清查看流程", async ({ page }) 
   await expect(chapterArtwork).not.toHaveCSS("box-shadow", "none");
   await expect(page.locator('img[src="/images/decro_baby.png"]')).toBeVisible();
 
+  await page.getByTestId("chapter-birth").scrollIntoViewIfNeeded();
+  const directoryScrollPosition = await page.evaluate(() => window.scrollY);
   await page.getByTestId("chapter-birth").click();
   await expect(page.getByRole("heading", { name: "诞生记忆" })).toBeVisible();
   await page.getByTestId("story-s1").click();
@@ -42,6 +44,10 @@ test("访客可以完成章节、故事和高清查看流程", async ({ page }) 
   await expect(page.getByTestId("story-detail")).toBeHidden();
   await page.getByRole("button", { name: "返回目录" }).click();
   await expect(page.getByTestId("chapter-birth")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+  expect(
+    Math.abs((await page.evaluate(() => window.scrollY)) - directoryScrollPosition),
+  ).toBeLessThan(300);
   expect(errors).toEqual([]);
 });
 

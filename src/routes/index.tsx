@@ -34,6 +34,8 @@ type AlbumPageProps = {
 export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps = {}) {
   const { album } = useAlbumDraft();
   const chaptersRef = useRef<HTMLElement | null>(null);
+  const directoryScrollPositionRef = useRef<number | null>(null);
+  const shouldRestoreDirectoryRef = useRef(false);
   const [chapterId, setChapterId] = useState<string | null>(initialChapterId ?? null);
   const [activeStory, setActiveStory] = useState<ActiveStory>(null);
   const [viewer, setViewer] = useState<ViewerState>(null);
@@ -80,6 +82,20 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
     }
   }, [album.chapters, initialStoryId]);
 
+  useEffect(() => {
+    if (chapterId || !shouldRestoreDirectoryRef.current) return;
+    shouldRestoreDirectoryRef.current = false;
+    const frame = requestAnimationFrame(() => {
+      const savedPosition = directoryScrollPositionRef.current;
+      if (savedPosition !== null) {
+        window.scrollTo({ top: savedPosition, behavior: "smooth" });
+      } else {
+        chaptersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [chapterId]);
+
   const scrollToDirectory = () => {
     if (chapterId) setChapterId(null);
     requestAnimationFrame(() =>
@@ -94,15 +110,14 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
   };
 
   const openChapter = (id: string) => {
+    directoryScrollPositionRef.current = window.scrollY;
     setChapterId(id);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const returnToDirectory = () => {
+    shouldRestoreDirectoryRef.current = true;
     setChapterId(null);
-    requestAnimationFrame(() =>
-      chaptersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-    );
   };
 
   const nextStory = () => {
