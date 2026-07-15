@@ -14,6 +14,8 @@ import { Route as EditorRouteImport } from './routes/editor'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoryStoryIdRouteImport } from './routes/story.$storyId'
 import { Route as EditorThemeRouteImport } from './routes/editor_.theme'
+import { Route as EditorStoriesRouteImport } from './routes/editor_.stories'
+import { Route as EditorProfileRouteImport } from './routes/editor_.profile'
 import { Route as ChapterChapterIdRouteImport } from './routes/chapter.$chapterId'
 
 const PreviewRoute = PreviewRouteImport.update({
@@ -41,6 +43,16 @@ const EditorThemeRoute = EditorThemeRouteImport.update({
   path: '/editor/theme',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EditorStoriesRoute = EditorStoriesRouteImport.update({
+  id: '/editor_/stories',
+  path: '/editor/stories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditorProfileRoute = EditorProfileRouteImport.update({
+  id: '/editor_/profile',
+  path: '/editor/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChapterChapterIdRoute = ChapterChapterIdRouteImport.update({
   id: '/chapter/$chapterId',
   path: '/chapter/$chapterId',
@@ -52,6 +64,8 @@ export interface FileRoutesByFullPath {
   '/editor': typeof EditorRoute
   '/preview': typeof PreviewRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
+  '/editor/profile': typeof EditorProfileRoute
+  '/editor/stories': typeof EditorStoriesRoute
   '/editor/theme': typeof EditorThemeRoute
   '/story/$storyId': typeof StoryStoryIdRoute
 }
@@ -60,6 +74,8 @@ export interface FileRoutesByTo {
   '/editor': typeof EditorRoute
   '/preview': typeof PreviewRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
+  '/editor/profile': typeof EditorProfileRoute
+  '/editor/stories': typeof EditorStoriesRoute
   '/editor/theme': typeof EditorThemeRoute
   '/story/$storyId': typeof StoryStoryIdRoute
 }
@@ -69,6 +85,8 @@ export interface FileRoutesById {
   '/editor': typeof EditorRoute
   '/preview': typeof PreviewRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
+  '/editor_/profile': typeof EditorProfileRoute
+  '/editor_/stories': typeof EditorStoriesRoute
   '/editor_/theme': typeof EditorThemeRoute
   '/story/$storyId': typeof StoryStoryIdRoute
 }
@@ -79,6 +97,8 @@ export interface FileRouteTypes {
     | '/editor'
     | '/preview'
     | '/chapter/$chapterId'
+    | '/editor/profile'
+    | '/editor/stories'
     | '/editor/theme'
     | '/story/$storyId'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +107,8 @@ export interface FileRouteTypes {
     | '/editor'
     | '/preview'
     | '/chapter/$chapterId'
+    | '/editor/profile'
+    | '/editor/stories'
     | '/editor/theme'
     | '/story/$storyId'
   id:
@@ -95,6 +117,8 @@ export interface FileRouteTypes {
     | '/editor'
     | '/preview'
     | '/chapter/$chapterId'
+    | '/editor_/profile'
+    | '/editor_/stories'
     | '/editor_/theme'
     | '/story/$storyId'
   fileRoutesById: FileRoutesById
@@ -104,6 +128,8 @@ export interface RootRouteChildren {
   EditorRoute: typeof EditorRoute
   PreviewRoute: typeof PreviewRoute
   ChapterChapterIdRoute: typeof ChapterChapterIdRoute
+  EditorProfileRoute: typeof EditorProfileRoute
+  EditorStoriesRoute: typeof EditorStoriesRoute
   EditorThemeRoute: typeof EditorThemeRoute
   StoryStoryIdRoute: typeof StoryStoryIdRoute
 }
@@ -145,6 +171,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditorThemeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/editor_/stories': {
+      id: '/editor_/stories'
+      path: '/editor/stories'
+      fullPath: '/editor/stories'
+      preLoaderRoute: typeof EditorStoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editor_/profile': {
+      id: '/editor_/profile'
+      path: '/editor/profile'
+      fullPath: '/editor/profile'
+      preLoaderRoute: typeof EditorProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chapter/$chapterId': {
       id: '/chapter/$chapterId'
       path: '/chapter/$chapterId'
@@ -160,6 +200,8 @@ const rootRouteChildren: RootRouteChildren = {
   EditorRoute: EditorRoute,
   PreviewRoute: PreviewRoute,
   ChapterChapterIdRoute: ChapterChapterIdRoute,
+  EditorProfileRoute: EditorProfileRoute,
+  EditorStoriesRoute: EditorStoriesRoute,
   EditorThemeRoute: EditorThemeRoute,
   StoryStoryIdRoute: StoryStoryIdRoute,
 }

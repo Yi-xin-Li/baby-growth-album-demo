@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import {
   ArrowDown,
   ArrowLeft,
@@ -24,14 +24,15 @@ import { fixedAlbumTheme } from "@/themes/album-themes";
 import type { GrowthAlbum, ImageMedia, Story } from "@/types/album";
 
 export const Route = createFileRoute("/editor")({
-  head: () => ({ meta: [{ title: "本地编辑台｜宝宝成长相册" }] }),
-  component: AlbumEditor,
+  beforeLoad: () => {
+    throw redirect({ to: "/editor/profile" });
+  },
 });
 
 const inputClass =
   "mt-1.5 min-h-11 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm outline-none transition focus:border-black/30 focus:ring-2 focus:ring-black/5";
 
-function AlbumEditor() {
+export function AlbumEditor() {
   const { album, setAlbum, reset, status } = useAlbumDraft();
   const [chapterId, setChapterId] = useState(album.chapters[0]?.id ?? "");
   const [storyId, setStoryId] = useState(album.chapters[0]?.stories[0]?.id ?? "");

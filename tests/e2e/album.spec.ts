@@ -66,6 +66,24 @@ test("编辑草稿刷新后仍然存在", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("主界面提供两个独立编辑入口，旧地址自动兼容", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "编辑相册" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "宝宝资料" })).toHaveAttribute(
+    "href",
+    "/editor/profile",
+  );
+  await expect(page.getByRole("link", { name: "成长故事" })).toHaveAttribute(
+    "href",
+    "/editor/stories",
+  );
+
+  await page.goto("/editor");
+  await expect(page).toHaveURL(/\/editor\/profile$/);
+  await page.goto("/editor/stories");
+  await expect(page).toHaveURL(/\/editor\/stories$/);
+});
+
 for (const width of [320, 375, 390, 430, 768, 1280]) {
   test(`${width}px 页面没有横向溢出`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
