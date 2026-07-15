@@ -18,7 +18,7 @@ export type AlbumTheme = {
 function themeIllustrations(marker: string): Record<IllustrationSlotId, string> {
   return {
     coverHero: "/images/cover_baby.png",
-    coverDecoration: marker,
+    coverDecoration: "/images/decro_baby.png",
     pageTexture: "",
     chapterIcon: marker,
     timelineMarker: marker,
