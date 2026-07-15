@@ -18,7 +18,7 @@ export const demoAlbum: GrowthAlbum = {
     birthDate: "2024.4.24",
     welcome: "欢迎来到皮君尧的成长时光机！",
   },
-  theme: "cream",
+  theme: "scrapbook",
   chapters: [
     {
       id: "birth",

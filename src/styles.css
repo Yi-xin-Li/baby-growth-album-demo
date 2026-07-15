@@ -144,6 +144,48 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+[data-album-theme="scrapbook"] {
+  --ink: oklch(0.29 0.025 55);
+  --paper: oklch(0.985 0.012 82);
+  --chapter-bg: oklch(0.95 0.05 112);
+  --story-bg: oklch(0.965 0.025 55);
+  --note-line: oklch(0.76 0.035 60);
+  --c-birth: oklch(0.92 0.055 20);
+  --c-talk: oklch(0.93 0.04 220);
+  --c-walk: oklch(0.95 0.065 95);
+  --c-explore: oklch(0.92 0.06 145);
+  --c-adventure: oklch(0.91 0.05 300);
+  --c-continue: oklch(0.94 0.055 58);
+}
+
+[data-album-theme="forest"] {
+  --ink: oklch(0.3 0.035 135);
+  --paper: oklch(0.98 0.015 100);
+  --chapter-bg: oklch(0.93 0.055 132);
+  --story-bg: oklch(0.965 0.025 118);
+  --note-line: oklch(0.68 0.06 135);
+  --c-birth: oklch(0.91 0.055 75);
+  --c-talk: oklch(0.9 0.055 155);
+  --c-walk: oklch(0.94 0.06 112);
+  --c-explore: oklch(0.88 0.07 145);
+  --c-adventure: oklch(0.9 0.05 190);
+  --c-continue: oklch(0.93 0.04 80);
+}
+
+[data-album-theme="space"] {
+  --ink: oklch(0.29 0.055 275);
+  --paper: oklch(0.97 0.018 280);
+  --chapter-bg: oklch(0.91 0.055 275);
+  --story-bg: oklch(0.95 0.035 285);
+  --note-line: oklch(0.67 0.07 275);
+  --c-birth: oklch(0.91 0.06 315);
+  --c-talk: oklch(0.88 0.07 245);
+  --c-walk: oklch(0.92 0.065 85);
+  --c-explore: oklch(0.87 0.07 275);
+  --c-adventure: oklch(0.85 0.08 295);
+  --c-continue: oklch(0.92 0.06 70);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

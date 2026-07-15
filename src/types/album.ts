@@ -13,6 +13,16 @@ export type VideoMedia = {
 
 export type MediaItem = ImageMedia | VideoMedia;
 
+export type ThemeId = "scrapbook" | "forest" | "space";
+
+export type IllustrationSlotId =
+  | "coverHero"
+  | "coverDecoration"
+  | "pageTexture"
+  | "timelineMarker"
+  | "noteDecoration"
+  | "emptyState";
+
 export type Story = {
   id: string;
   title: string;
@@ -44,6 +54,6 @@ export type AlbumProfile = {
 
 export type GrowthAlbum = {
   profile: AlbumProfile;
-  theme: "cream" | "nature" | "candy";
+  theme: ThemeId;
   chapters: Chapter[];
 };
