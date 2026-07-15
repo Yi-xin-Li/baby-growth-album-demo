@@ -7,6 +7,15 @@ const storeName = "drafts";
 const draftKey = "active-album";
 const localMirrorKey = "baby-growth-album-draft";
 
+const chapterArtwork: Record<string, string> = {
+  birth: "/images/decro_birth.png",
+  talk: "/images/decro_talk.png",
+  walk: "/images/decro_walk.png",
+  explore: "/images/decro_explore.png",
+  adventure: "/images/decro_adventure.png",
+  continue: "/images/decro_continue.png",
+};
+
 export function cloneDemoAlbum(): GrowthAlbum {
   return structuredClone(demoAlbum);
 }
@@ -16,6 +25,10 @@ function normalizeAlbum(album: GrowthAlbum): GrowthAlbum {
     ...album,
     animationSpeed: album.animationSpeed ?? "slow",
     customIllustrations: album.customIllustrations ?? {},
+    chapters: album.chapters.map((chapter) => ({
+      ...chapter,
+      icon: chapterArtwork[chapter.id] ?? chapter.icon,
+    })),
   };
 }
 

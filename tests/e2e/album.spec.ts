@@ -21,7 +21,9 @@ test("访客可以完成章节、故事和高清查看流程", async ({ page }) 
   await expect(page.getByText("选择主题")).toHaveCount(0);
   const chapterArtwork = page.getByTestId("chapter-birth").locator(":scope > div").first();
   await expect(chapterArtwork.locator("img")).toHaveCount(1);
-  await expect(chapterArtwork).toHaveCSS("border-top-width", "0px");
+  await expect(chapterArtwork.locator("img")).toHaveAttribute("src", "/images/decro_birth.png");
+  await expect(chapterArtwork).toHaveCSS("border-top-width", "3px");
+  await expect(chapterArtwork).toHaveCSS("background-color", /.+/);
   await expect(chapterArtwork).not.toHaveCSS("box-shadow", "none");
   await expect(page.locator('img[src="/images/decro_baby.png"]')).toBeVisible();
 

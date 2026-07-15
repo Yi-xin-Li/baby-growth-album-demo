@@ -1,9 +1,3 @@
-import iconAdventure from "@/assets/icon_adventure.png.asset.json";
-import iconBirth from "@/assets/icon_birth.png.asset.json";
-import iconContinue from "@/assets/icon_continue.png.asset.json";
-import iconExplore from "@/assets/icon_explore.png.asset.json";
-import iconTalk from "@/assets/icon_talk.png.asset.json";
-import iconWalk from "@/assets/icon_walk.png.asset.json";
 import type { GrowthAlbum } from "@/types/album";
 
 const PHOTO_A = "https://images.unsplash.com/photo-1519689680058-324335c77eba?w=900&q=80";
@@ -30,7 +24,7 @@ export const demoAlbum: GrowthAlbum = {
       id: "birth",
       title: "诞生记忆",
       age: "0-100天",
-      icon: iconBirth.url,
+      icon: "/images/decro_birth.png",
       bg: "var(--c-birth)",
       smallIcon: "🚗",
       stories: [
@@ -58,7 +52,7 @@ export const demoAlbum: GrowthAlbum = {
       id: "talk",
       title: "蹒跚学语",
       age: "3-6个月",
-      icon: iconTalk.url,
+      icon: "/images/decro_talk.png",
       bg: "var(--c-talk)",
       smallIcon: "💬",
       stories: [
@@ -77,7 +71,7 @@ export const demoAlbum: GrowthAlbum = {
       id: "walk",
       title: "跌跌撞撞",
       age: "6个月-1岁",
-      icon: iconWalk.url,
+      icon: "/images/decro_walk.png",
       bg: "var(--c-walk)",
       smallIcon: "👣",
       stories: [
@@ -96,7 +90,7 @@ export const demoAlbum: GrowthAlbum = {
       id: "explore",
       title: "探索世界",
       age: "1岁-2岁",
-      icon: iconExplore.url,
+      icon: "/images/decro_explore.png",
       bg: "var(--c-explore)",
       smallIcon: "🚙",
       stories: [
@@ -115,7 +109,7 @@ export const demoAlbum: GrowthAlbum = {
       id: "adventure",
       title: "小冒险家",
       age: "2岁-3岁",
-      icon: iconAdventure.url,
+      icon: "/images/decro_adventure.png",
       bg: "var(--c-adventure)",
       smallIcon: "🪁",
       stories: [
@@ -134,7 +128,7 @@ export const demoAlbum: GrowthAlbum = {
       id: "continue",
       title: "继续长大",
       age: "3岁+",
-      icon: iconContinue.url,
+      icon: "/images/decro_continue.png",
       bg: "var(--c-continue)",
       smallIcon: "📖",
       stories: [
