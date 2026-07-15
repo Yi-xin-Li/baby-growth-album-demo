@@ -19,7 +19,10 @@ test("访客可以完成章节、故事和高清查看流程", async ({ page }) 
   await page.goto("/");
   await expect(page.locator("main")).toHaveAttribute("data-album-theme", "scrapbook");
   await expect(page.getByText("选择主题")).toHaveCount(0);
-  await expect(page.getByTestId("chapter-birth").locator("img")).toHaveCount(1);
+  const chapterArtwork = page.getByTestId("chapter-birth").locator(":scope > div").first();
+  await expect(chapterArtwork.locator("img")).toHaveCount(1);
+  await expect(chapterArtwork).toHaveCSS("border-top-width", "0px");
+  await expect(chapterArtwork).not.toHaveCSS("box-shadow", "none");
   await expect(page.locator('img[src="/images/decro_baby.png"]')).toBeVisible();
 
   await page.getByTestId("chapter-birth").click();
