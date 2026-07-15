@@ -12,6 +12,9 @@ const PHOTO_B = "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=900
 const PHOTO_B_THUMB = "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&q=70";
 
 export const demoAlbum: GrowthAlbum = {
+  id: "demo-album-001",
+  slug: "pijunyao-growth-album",
+  visibility: "unlisted",
   profile: {
     displayName: "皮君尧",
     romanizedName: "PIJUNYAO",
@@ -19,6 +22,7 @@ export const demoAlbum: GrowthAlbum = {
     welcome: "欢迎来到皮君尧的成长时光机！",
   },
   theme: "scrapbook",
+  animationEnabled: true,
   chapters: [
     {
       id: "birth",

@@ -6,7 +6,7 @@ type AlbumNavigationProps = {
 export function AlbumNavigation({ onHome, onOpenDirectory }: AlbumNavigationProps) {
   return (
     <nav
-      className="fixed top-0 inset-x-0 z-30 flex items-center justify-end gap-5 px-5 py-3 text-[13px]"
+      className="fixed inset-x-0 top-0 z-30 flex items-center justify-end gap-4 px-5 py-3 text-[13px]"
       style={{ background: "linear-gradient(to bottom, var(--paper) 70%, transparent)" }}
     >
       <button type="button" onClick={onHome} className="hover:opacity-70">
@@ -15,6 +15,12 @@ export function AlbumNavigation({ onHome, onOpenDirectory }: AlbumNavigationProp
       <button type="button" onClick={onOpenDirectory} className="hover:opacity-70">
         时光轴 ▾
       </button>
+      <a
+        href="/editor"
+        className="rounded-full border border-black/5 bg-white/65 px-3 py-1.5 text-[11px] shadow-sm hover:bg-white"
+      >
+        编辑相册
+      </a>
     </nav>
   );
 }

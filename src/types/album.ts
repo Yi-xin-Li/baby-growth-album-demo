@@ -53,7 +53,12 @@ export type AlbumProfile = {
 };
 
 export type GrowthAlbum = {
+  id: string;
+  ownerId?: string;
+  slug: string;
+  visibility: "public" | "unlisted" | "private";
   profile: AlbumProfile;
   theme: ThemeId;
+  animationEnabled: boolean;
   chapters: Chapter[];
 };

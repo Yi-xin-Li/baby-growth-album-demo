@@ -10,8 +10,8 @@ import { StoryDetailModal } from "@/components/album/StoryDetailModal";
 import { ThemeSwitcher } from "@/components/album/ThemeSwitcher";
 import { demoAlbum } from "@/data/demo-album";
 import { getStoryMedia } from "@/lib/album-media";
+import { useAlbumDraft } from "@/hooks/use-album-draft";
 import { albumThemes } from "@/themes/album-themes";
-import type { ThemeId } from "@/types/album";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -26,50 +26,23 @@ export const Route = createFileRoute("/")({
 });
 
 type ActiveStory = { chapterId: string; storyIndex: number } | null;
-const themeStorageKey = "baby-album-theme";
-
-function readSavedTheme(): ThemeId | null {
-  try {
-    const savedTheme = window.localStorage?.getItem(themeStorageKey);
-    if (savedTheme && savedTheme in albumThemes) return savedTheme as ThemeId;
-  } catch {
-    // Privacy-focused browsers may disable localStorage; the cookie is the fallback.
-  }
-
-  const cookieTheme = document.cookie
-    .split("; ")
-    .find((cookie) => cookie.startsWith(`${themeStorageKey}=`))
-    ?.split("=")[1];
-  return cookieTheme && cookieTheme in albumThemes ? (cookieTheme as ThemeId) : null;
-}
-
-function saveTheme(themeId: ThemeId) {
-  try {
-    window.localStorage?.setItem(themeStorageKey, themeId);
-  } catch {
-    // Keep the cookie fallback working when localStorage is unavailable.
-  }
-  document.cookie = `${themeStorageKey}=${themeId}; max-age=31536000; path=/; samesite=lax`;
-}
 
 function AlbumPage() {
+  const { album, setAlbum } = useAlbumDraft();
   const chaptersRef = useRef<HTMLElement | null>(null);
   const [chapterId, setChapterId] = useState<string | null>(null);
   const [activeStory, setActiveStory] = useState<ActiveStory>(null);
   const [viewer, setViewer] = useState<ViewerState>(null);
-  const [themeId, setThemeId] = useState<ThemeId>(demoAlbum.theme);
 
-  const chapter = chapterId
-    ? (demoAlbum.chapters.find((item) => item.id === chapterId) ?? null)
-    : null;
+  const chapter = chapterId ? (album.chapters.find((item) => item.id === chapterId) ?? null) : null;
   const storyChapter = activeStory
-    ? (demoAlbum.chapters.find((item) => item.id === activeStory.chapterId) ?? null)
+    ? (album.chapters.find((item) => item.id === activeStory.chapterId) ?? null)
     : null;
   const story =
     activeStory && storyChapter ? (storyChapter.stories[activeStory.storyIndex] ?? null) : null;
   const storyMedia = story ? getStoryMedia(story) : [];
-  const activeTheme = albumThemes[themeId];
-  const storyCount = demoAlbum.chapters.reduce(
+  const activeTheme = albumThemes[album.theme];
+  const storyCount = album.chapters.reduce(
     (total, currentChapter) => total + currentChapter.stories.length,
     0,
   );
@@ -82,16 +55,6 @@ function AlbumPage() {
       document.body.style.overflow = originalOverflow;
     };
   }, [activeStory, viewer]);
-
-  useEffect(() => {
-    const savedTheme = readSavedTheme();
-    if (savedTheme) setThemeId(savedTheme);
-  }, []);
-
-  const changeTheme = (nextTheme: ThemeId) => {
-    setThemeId(nextTheme);
-    saveTheme(nextTheme);
-  };
 
   const scrollToDirectory = () => {
     if (chapterId) setChapterId(null);
@@ -128,12 +91,16 @@ function AlbumPage() {
 
   return (
     <main
-      data-album-theme={themeId}
+      data-album-theme={album.theme}
+      data-animation-enabled={album.animationEnabled}
       className="min-h-screen w-full overflow-x-hidden"
       style={{ fontFamily: "'Noto Serif SC', serif", color: "var(--ink)" }}
     >
       <AlbumNavigation onHome={goHome} onOpenDirectory={scrollToDirectory} />
-      <ThemeSwitcher value={themeId} onChange={changeTheme} />
+      <ThemeSwitcher
+        value={album.theme}
+        onChange={(theme) => setAlbum((current) => ({ ...current, theme }))}
+      />
 
       <AnimatePresence mode="wait">
         {chapter ? (
@@ -153,14 +120,14 @@ function AlbumPage() {
             transition={{ duration: 0.4 }}
           >
             <CoverSection
-              profile={demoAlbum.profile}
+              profile={album.profile}
               theme={activeTheme}
               storyCount={storyCount}
               onExplore={scrollToDirectory}
             />
             <ChapterDirectory
               ref={chaptersRef}
-              chapters={demoAlbum.chapters}
+              chapters={album.chapters}
               theme={activeTheme}
               onOpen={openChapter}
             />

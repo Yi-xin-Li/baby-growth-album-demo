@@ -186,6 +186,26 @@
   --c-continue: oklch(0.92 0.06 70);
 }
 
+[data-animation-enabled="false"] *,
+[data-animation-enabled="false"] *::before,
+[data-animation-enabled="false"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
