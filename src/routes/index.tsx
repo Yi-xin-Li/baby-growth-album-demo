@@ -68,6 +68,11 @@ function AlbumPage() {
   const story =
     activeStory && storyChapter ? (storyChapter.stories[activeStory.storyIndex] ?? null) : null;
   const storyMedia = story ? getStoryMedia(story) : [];
+  const activeTheme = albumThemes[themeId];
+  const storyCount = demoAlbum.chapters.reduce(
+    (total, currentChapter) => total + currentChapter.stories.length,
+    0,
+  );
 
   useEffect(() => {
     if (!activeStory && !viewer) return;
@@ -135,6 +140,7 @@ function AlbumPage() {
           <ChapterTimeline
             key={chapter.id}
             chapter={chapter}
+            theme={activeTheme}
             onBack={returnToDirectory}
             onOpenStory={(_, storyIndex) => setActiveStory({ chapterId: chapter.id, storyIndex })}
           />
@@ -146,10 +152,16 @@ function AlbumPage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <CoverSection profile={demoAlbum.profile} onExplore={scrollToDirectory} />
+            <CoverSection
+              profile={demoAlbum.profile}
+              theme={activeTheme}
+              storyCount={storyCount}
+              onExplore={scrollToDirectory}
+            />
             <ChapterDirectory
               ref={chaptersRef}
               chapters={demoAlbum.chapters}
+              theme={activeTheme}
               onOpen={openChapter}
             />
           </motion.div>
