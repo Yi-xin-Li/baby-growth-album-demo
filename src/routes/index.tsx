@@ -153,6 +153,7 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
         active={navigationView}
         onHome={goHome}
         onOpenDirectory={scrollToDirectory}
+        autoHide
       />
 
       <AnimatePresence mode="wait">

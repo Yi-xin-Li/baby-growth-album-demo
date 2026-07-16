@@ -69,11 +69,11 @@ test("编辑草稿刷新后仍然存在", async ({ page }) => {
 test("主界面提供两个独立编辑入口，旧地址自动兼容", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "编辑相册" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "宝宝资料" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "宝宝档案" })).toHaveAttribute(
     "href",
     "/editor/profile",
   );
-  await expect(page.getByRole("link", { name: "成长故事" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "成长记录" })).toHaveAttribute(
     "href",
     "/editor/stories",
   );
@@ -90,10 +90,31 @@ test("主界面提供两个独立编辑入口，旧地址自动兼容", async ({
   await expect(page.getByRole("button", { name: "新增故事" })).toHaveCount(0);
   const editorNavigation = page.getByRole("navigation", { name: "主要页面导航" });
   await expect(editorNavigation.getByRole("link")).toHaveCount(4);
-  await expect(editorNavigation.getByRole("link", { name: "宝宝资料" })).toHaveClass(/bg-black/);
+  await expect(editorNavigation.getByRole("link", { name: "宝宝档案" })).toHaveClass(/bg-black/);
   await editorNavigation.getByRole("link", { name: "成长章节" }).click();
   await expect(page).toHaveURL(/\/#chapters$/);
   await expect(page.getByTestId("chapter-birth")).toBeVisible();
+});
+
+test("手机端展示页导航随滚动隐藏并在向上滑动时恢复", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  await page.goto("/");
+  const navigation = page.getByRole("navigation", { name: "主要页面导航" });
+
+  await expect(navigation).toHaveAttribute("data-hidden", "false");
+  await expect(navigation.getByRole("button")).toHaveCount(2);
+  await expect(navigation.getByRole("link")).toHaveCount(2);
+
+  await page.evaluate(() => window.scrollTo(0, 700));
+  await expect(navigation).toHaveAttribute("data-hidden", "true");
+
+  await page.evaluate(() => window.scrollTo(0, 300));
+  await expect(navigation).toHaveAttribute("data-hidden", "false");
+
+  await page.goto("/editor/profile");
+  const editorNavigation = page.getByRole("navigation", { name: "主要页面导航" });
+  await page.evaluate(() => window.scrollTo(0, 600));
+  await expect(editorNavigation).toHaveAttribute("data-hidden", "false");
 });
 
 for (const width of [320, 375, 390, 430, 768, 1280]) {

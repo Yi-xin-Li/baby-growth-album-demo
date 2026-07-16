@@ -234,9 +234,9 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f1eb] pt-[88px] text-[#2e2a25] sm:pt-[52px]">
+    <main className="min-h-screen bg-[#f4f1eb] pt-[52px] text-[#2e2a25]">
       <AlbumNavigation active={mode} />
-      <header className="sticky top-[88px] z-30 flex min-h-14 items-center justify-between border-b border-black/5 bg-[#f4f1eb]/90 px-4 backdrop-blur sm:top-[52px] sm:px-7">
+      <header className="sticky top-[52px] z-30 flex min-h-14 items-center justify-between border-b border-black/5 bg-[#f4f1eb]/90 px-4 backdrop-blur sm:px-7">
         <div className="flex items-center gap-3">
           <a
             href="/"

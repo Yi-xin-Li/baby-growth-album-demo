@@ -101,7 +101,7 @@ function IllustrationEditor() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f1eb] px-4 pb-6 pt-[104px] text-[#2e2a25] sm:px-7 sm:pt-[72px]">
+    <main className="min-h-screen bg-[#f4f1eb] px-4 pb-6 pt-[72px] text-[#2e2a25] sm:px-7">
       <AlbumNavigation active="profile" />
       <div className="mx-auto max-w-5xl">
         <header className="flex flex-wrap items-center justify-between gap-4">
