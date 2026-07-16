@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ImagePlus, RotateCcw, Save } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlbumNavigation } from "@/components/album/AlbumNavigation";
+import { demoAlbum } from "@/data/demo-album";
 import { useAlbumDraft } from "@/hooks/use-album-draft";
 import { saveAlbumDraft } from "@/lib/album-store";
 import { processIllustration } from "@/lib/illustration-processing";
@@ -9,7 +10,7 @@ import { fixedAlbumTheme } from "@/themes/album-themes";
 import type { IllustrationSlotId } from "@/types/album";
 
 export const Route = createFileRoute("/editor_/theme")({
-  head: () => ({ meta: [{ title: "自定义插画｜宝宝成长相册" }] }),
+  head: () => ({ meta: [{ title: "个性化设置｜宝宝成长相册" }] }),
   component: IllustrationEditor,
 });
 
@@ -43,26 +44,27 @@ const slotGroups: Array<{
       },
     ],
   },
-  {
-    name: "成长章节",
-    description: "控制每篇时间轴故事左侧的节点插画。",
-    slots: [
-      {
-        id: "timelineMarker",
-        name: "时间轴节点",
-        location: "成长章节中每篇故事左侧",
-        recommendation: "小型透明图，建议 256 × 256",
-      },
-    ],
-  },
 ];
 
 const slotDetails = slotGroups.flatMap((group) => group.slots);
+
+type ChapterDraft = {
+  id: string;
+  title: string;
+  icon: string;
+};
+
+function getChapterDrafts(chapters: typeof demoAlbum.chapters): ChapterDraft[] {
+  return chapters.map(({ id, title, icon }) => ({ id, title, icon }));
+}
 
 function IllustrationEditor() {
   const { album, status } = useAlbumDraft();
   const [message, setMessage] = useState("");
   const [draftIllustrations, setDraftIllustrations] = useState(album.customIllustrations ?? {});
+  const [draftChapters, setDraftChapters] = useState<ChapterDraft[]>(
+    getChapterDrafts(album.chapters),
+  );
   const [leaveTarget, setLeaveTarget] = useState<string | null>(null);
   const initializedRef = useRef(false);
   const allowNavigationRef = useRef(false);
@@ -70,12 +72,15 @@ function IllustrationEditor() {
   useEffect(() => {
     if (status === "loading" || initializedRef.current) return;
     setDraftIllustrations({ ...(album.customIllustrations ?? {}) });
+    setDraftChapters(getChapterDrafts(album.chapters));
     initializedRef.current = true;
-  }, [album.customIllustrations, status]);
+  }, [album.chapters, album.customIllustrations, status]);
 
   const isDirty = useMemo(
-    () => JSON.stringify(draftIllustrations) !== JSON.stringify(album.customIllustrations ?? {}),
-    [album.customIllustrations, draftIllustrations],
+    () =>
+      JSON.stringify(draftIllustrations) !== JSON.stringify(album.customIllustrations ?? {}) ||
+      JSON.stringify(draftChapters) !== JSON.stringify(getChapterDrafts(album.chapters)),
+    [album.chapters, album.customIllustrations, draftChapters, draftIllustrations],
   );
 
   useEffect(() => {
@@ -109,10 +114,27 @@ function IllustrationEditor() {
     });
   };
 
-  const saveIllustrations = async () => {
+  const saveSettings = async () => {
+    const normalizedChapters = draftChapters.map((chapter) => ({
+      ...chapter,
+      title: chapter.title.trim(),
+    }));
+    if (normalizedChapters.some((chapter) => !chapter.title)) {
+      setMessage("章节名称不能为空");
+      return false;
+    }
     try {
-      await saveAlbumDraft({ ...album, customIllustrations: draftIllustrations });
-      setMessage("自定义插画已保存");
+      const draftById = new Map(normalizedChapters.map((chapter) => [chapter.id, chapter]));
+      await saveAlbumDraft({
+        ...album,
+        customIllustrations: draftIllustrations,
+        chapters: album.chapters.map((chapter) => {
+          const draft = draftById.get(chapter.id);
+          return draft ? { ...chapter, title: draft.title, icon: draft.icon } : chapter;
+        }),
+      });
+      setDraftChapters(normalizedChapters);
+      setMessage("个性化设置已保存");
       return true;
     } catch {
       setMessage("保存失败，请重试");
@@ -128,6 +150,24 @@ function IllustrationEditor() {
       setMessage("插画已进入预览，点击“保存插画”后生效");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "插画处理失败");
+    }
+  };
+
+  const updateChapter = (chapterId: string, patch: Partial<Omit<ChapterDraft, "id">>) => {
+    setDraftChapters((current) =>
+      current.map((chapter) => (chapter.id === chapterId ? { ...chapter, ...patch } : chapter)),
+    );
+  };
+
+  const uploadChapterIcon = async (chapterId: string, file?: File) => {
+    if (!file) return;
+    const chapter = draftChapters.find((item) => item.id === chapterId);
+    try {
+      setMessage(`正在处理“${chapter?.title ?? "成长章节"}”插画…`);
+      updateChapter(chapterId, { icon: await processIllustration(file) });
+      setMessage("章节插画已进入预览，点击“保存设置”后生效");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "章节插画处理失败");
     }
   };
 
@@ -150,25 +190,25 @@ function IllustrationEditor() {
               <ArrowLeft className="size-4" />
             </a>
             <div>
-              <p className="text-[10px] tracking-[.25em] text-neutral-400">ILLUSTRATION SLOTS</p>
-              <h1 className="text-xl font-bold">自定义插画</h1>
+              <p className="text-[10px] tracking-[.25em] text-neutral-400">PERSONALIZATION</p>
+              <h1 className="text-xl font-bold">个性化设置</h1>
             </div>
           </div>
           <button
             type="button"
             disabled={!isDirty}
-            onClick={() => void saveIllustrations()}
+            onClick={() => void saveSettings()}
             className="inline-flex min-h-10 items-center gap-2 rounded-full bg-black px-4 text-[11px] text-white disabled:cursor-not-allowed disabled:opacity-35"
           >
-            <Save className="size-3.5" /> 保存插画
+            <Save className="size-3.5" /> 保存设置
           </button>
         </header>
 
         <div className="mt-6 rounded-3xl border border-black/5 bg-white/65 p-5">
-          <p className="text-sm font-bold">在预留位置替换插画</p>
+          <p className="text-sm font-bold">修改插画和成长章节</p>
           <p className="mt-1 text-xs leading-6 text-neutral-500">
-            只替换预先设计好的位置，不改变整体排版。支持 PNG、WebP、SVG，单个文件不超过
-            4MB；确认预览效果后，请点击右上角“保存插画”。
+            支持 PNG、WebP、SVG，单个文件不超过 4MB；章节名称最多12个字符。确认效果后，
+            请点击右上角“保存设置”。
           </p>
           {message && (
             <p role="status" className="mt-3 rounded-xl bg-neutral-100 px-3 py-2 text-xs">
@@ -251,6 +291,95 @@ function IllustrationEditor() {
               </div>
             </section>
           ))}
+
+          <section>
+            <h2 className="text-base font-bold">成长章节</h2>
+            <p className="mt-1 text-xs text-neutral-500">
+              六个章节可以分别修改名称和插画，保存后会同步到目录、章节详情和编辑页面。
+            </p>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {draftChapters.map((chapter) => {
+                const defaultChapter = demoAlbum.chapters.find((item) => item.id === chapter.id);
+                const isCustom =
+                  chapter.title !== defaultChapter?.title || chapter.icon !== defaultChapter?.icon;
+                return (
+                  <article
+                    key={chapter.id}
+                    className="overflow-hidden rounded-3xl border border-black/5 bg-white p-4 shadow-sm"
+                  >
+                    <div
+                      className="grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl"
+                      style={{ background: defaultChapter?.bg ?? "#f5f1e9" }}
+                    >
+                      <img
+                        src={chapter.icon}
+                        alt={`${chapter.title}章节插画`}
+                        className="h-full w-full object-contain p-3"
+                      />
+                    </div>
+                    <div className="mt-4 flex items-center justify-between gap-2">
+                      <label className="text-xs font-bold" htmlFor={`chapter-title-${chapter.id}`}>
+                        章节名称
+                      </label>
+                      <span
+                        className={`rounded-full px-2 py-1 text-[9px] ${
+                          isCustom
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-neutral-100 text-neutral-500"
+                        }`}
+                      >
+                        {isCustom ? "已修改" : "使用默认"}
+                      </span>
+                    </div>
+                    <input
+                      id={`chapter-title-${chapter.id}`}
+                      aria-label={`${defaultChapter?.title ?? chapter.id}章节名称`}
+                      value={chapter.title}
+                      maxLength={12}
+                      onChange={(event) => updateChapter(chapter.id, { title: event.target.value })}
+                      className="mt-2 min-h-10 w-full rounded-xl border border-black/10 px-3 text-xs outline-none focus:border-black/30"
+                    />
+                    <label className="mt-3 inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-1 rounded-xl bg-black px-3 text-[10px] text-white">
+                      <ImagePlus className="size-3" /> 替换章节插画
+                      <input
+                        type="file"
+                        accept="image/png,image/webp,image/svg+xml"
+                        className="sr-only"
+                        onChange={(event) => {
+                          void uploadChapterIcon(chapter.id, event.target.files?.[0]);
+                          event.target.value = "";
+                        }}
+                      />
+                    </label>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        disabled={chapter.title === defaultChapter?.title}
+                        onClick={() =>
+                          defaultChapter &&
+                          updateChapter(chapter.id, { title: defaultChapter.title })
+                        }
+                        className="min-h-9 rounded-xl bg-neutral-100 px-2 text-[9px] disabled:opacity-35"
+                      >
+                        恢复默认名称
+                      </button>
+                      <button
+                        type="button"
+                        disabled={chapter.icon === defaultChapter?.icon}
+                        onClick={() =>
+                          defaultChapter && updateChapter(chapter.id, { icon: defaultChapter.icon })
+                        }
+                        aria-label={`恢复${defaultChapter?.title ?? chapter.id}默认插画`}
+                        className="min-h-9 rounded-xl bg-neutral-100 px-2 text-[9px] disabled:opacity-35"
+                      >
+                        恢复默认插画
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
         </div>
       </div>
       {leaveTarget && (
@@ -258,20 +387,20 @@ function IllustrationEditor() {
           <section
             role="dialog"
             aria-modal="true"
-            aria-labelledby="unsaved-illustrations-title"
+            aria-labelledby="unsaved-settings-title"
             className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl"
           >
-            <h2 id="unsaved-illustrations-title" className="text-lg font-bold">
-              插画还没有保存
+            <h2 id="unsaved-settings-title" className="text-lg font-bold">
+              个性化设置还没有保存
             </h2>
             <p className="mt-2 text-xs leading-6 text-neutral-500">
-              你可以保存后离开，也可以放弃本次插画修改。
+              你可以保存后离开，也可以放弃本次修改。
             </p>
             <div className="mt-5 grid gap-2">
               <button
                 type="button"
                 onClick={async () => {
-                  if (await saveIllustrations()) {
+                  if (await saveSettings()) {
                     allowNavigationRef.current = true;
                     window.location.assign(leaveTarget);
                   }

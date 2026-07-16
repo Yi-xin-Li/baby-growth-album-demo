@@ -320,8 +320,8 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
               </EditorSection>
 
               <EditorSection
-                title="动效与插画"
-                description="调整展示动画，或替换页面中预留的插画。"
+                title="动效与个性化"
+                description="调整展示动画，或修改页面插画和章节信息。"
                 collapsible
                 defaultOpen={false}
                 storageKey="baby-album-ui:profile-appearance"
@@ -371,7 +371,7 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                   href="/editor/theme"
                   className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-black px-4 text-xs text-white"
                 >
-                  <Palette className="size-3.5" /> 自定义插画
+                  <Palette className="size-3.5" /> 个性化设置
                 </a>
               </EditorSection>
             </>

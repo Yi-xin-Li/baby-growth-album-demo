@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { getImageSource } from "@/lib/album-media";
 import type { MediaItem } from "@/types/album";
@@ -15,6 +15,7 @@ type MediaViewerProps = {
 export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
   const [playing, setPlaying] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
   const go = useCallback(
     (direction: number) => {
       if (!state) return;
@@ -37,6 +38,25 @@ export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
   }, [go, onClose, state]);
 
   const item = state?.media[state.index];
+
+  const startSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest("video")) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const finishSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = pointerStartRef.current;
+    pointerStartRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (!start || (event.target as HTMLElement).closest("video")) return;
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.2) return;
+    go(deltaX < 0 ? 1 : -1);
+  };
 
   return (
     <AnimatePresence>
@@ -69,7 +89,16 @@ export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
               ‹
             </button>
           )}
-          <div className="w-full max-w-3xl" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="w-full max-w-3xl touch-pan-y"
+            onClick={(event) => event.stopPropagation()}
+            onDragStart={(event) => event.preventDefault()}
+            onPointerDown={startSwipe}
+            onPointerUp={finishSwipe}
+            onPointerCancel={() => {
+              pointerStartRef.current = null;
+            }}
+          >
             {item.type === "video" && item.videoUrl && playing ? (
               <video
                 src={item.videoUrl}

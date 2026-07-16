@@ -133,16 +133,6 @@ export function ChapterTimeline({
                 whileHover={{ y: -3 }}
                 className="group relative mb-8 block w-full rounded-3xl border border-white/60 bg-white/55 p-3 text-left shadow-[0_12px_35px_rgba(80,60,40,0.06)] backdrop-blur-sm transition-colors last:mb-0 hover:bg-white/80"
               >
-                <div
-                  className="absolute -left-[30px] top-3 w-7 h-7 rounded-full flex items-center justify-center text-sm"
-                  style={{ background: chapter.bg }}
-                >
-                  <SafeImage
-                    src={theme.illustrations.timelineMarker}
-                    alt=""
-                    className="size-6 rounded-full object-contain"
-                  />
-                </div>
                 <div className="mb-3 flex items-start justify-between gap-3 px-1 pt-1">
                   <div>
                     <p className="text-sm font-bold">{story.title}</p>

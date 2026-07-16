@@ -7,7 +7,7 @@ const storeName = "drafts";
 const draftKey = "active-album";
 const localMirrorKey = "baby-growth-album-draft";
 
-const chapterArtwork: Record<string, string> = {
+const defaultChapterArtwork: Record<string, string> = {
   birth: "/images/decro_birth.png",
   talk: "/images/decro_talk.png",
   walk: "/images/decro_walk.png",
@@ -27,7 +27,7 @@ function normalizeAlbum(album: GrowthAlbum): GrowthAlbum {
     customIllustrations: album.customIllustrations ?? {},
     chapters: album.chapters.map((chapter) => ({
       ...chapter,
-      icon: chapterArtwork[chapter.id] ?? chapter.icon,
+      icon: chapter.icon || defaultChapterArtwork[chapter.id] || "",
     })),
   };
 }
