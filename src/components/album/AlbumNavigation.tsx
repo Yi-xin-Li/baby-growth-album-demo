@@ -8,7 +8,7 @@ type AlbumNavigationProps = {
 };
 
 const baseClass =
-  "grid min-h-9 min-w-0 place-items-center whitespace-nowrap rounded-full px-1.5 py-1.5 text-[10px] transition sm:min-w-24 sm:px-3 sm:text-[11px]";
+  "grid min-h-9 min-w-0 place-items-center whitespace-nowrap rounded-full px-1.5 py-1.5 text-[10px] font-medium [font-family:inherit] transition sm:min-w-24 sm:px-3 sm:text-[11px]";
 
 export function AlbumNavigation({
   active,

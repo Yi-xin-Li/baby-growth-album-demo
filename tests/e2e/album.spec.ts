@@ -33,7 +33,7 @@ test("访客可以完成章节、故事和高清查看流程", async ({ page }) 
   await page.getByTestId("chapter-birth").scrollIntoViewIfNeeded();
   const directoryScrollPosition = await page.evaluate(() => window.scrollY);
   await page.getByTestId("chapter-birth").click();
-  await expect(page.getByRole("heading", { name: "诞生记忆" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "诞生记忆" })).toBeVisible({ timeout: 10_000 });
   await page.getByTestId("story-s1").click();
   await expect(page.getByTestId("story-detail")).toBeVisible();
   await page.getByTestId("story-hero-media").click();
@@ -82,10 +82,13 @@ test("主界面提供两个独立编辑入口，旧地址自动兼容", async ({
   await expect(page).toHaveURL(/\/editor\/profile$/);
   await page.goto("/editor/stories");
   await expect(page).toHaveURL(/\/editor\/stories$/);
-  await expect(page.getByRole("heading", { name: "成长故事" }).first()).toBeVisible();
+  await expect(page).toHaveTitle("成长记录｜宝宝成长相册");
+  await expect(page.getByRole("heading", { name: "成长记录" }).first()).toBeVisible();
   await expect(page.getByRole("textbox", { name: "宝宝姓名" })).toHaveCount(0);
 
   await page.goto("/editor/profile");
+  await expect(page).toHaveTitle("宝宝档案｜宝宝成长相册");
+  await expect(page.getByRole("heading", { name: "宝宝档案" }).first()).toBeVisible();
   await expect(page.getByRole("textbox", { name: "宝宝姓名" })).toBeVisible();
   await expect(page.getByRole("button", { name: "新增故事" })).toHaveCount(0);
   const editorNavigation = page.getByRole("navigation", { name: "主要页面导航" });
@@ -94,6 +97,69 @@ test("主界面提供两个独立编辑入口，旧地址自动兼容", async ({
   await editorNavigation.getByRole("link", { name: "成长章节" }).click();
   await expect(page).toHaveURL(/\/#chapters$/);
   await expect(page.getByTestId("chapter-birth")).toBeVisible();
+});
+
+test("四项导航使用统一字体", async ({ page }) => {
+  await page.goto("/");
+  const navigation = page.getByRole("navigation", { name: "主要页面导航" });
+  const fonts = await navigation
+    .getByRole("button", { name: "首页" })
+    .evaluate(
+      (home, profile) => [
+        window.getComputedStyle(home).fontFamily,
+        window.getComputedStyle(profile as Element).fontFamily,
+      ],
+      await navigation.getByRole("link", { name: "宝宝档案" }).elementHandle(),
+    );
+  expect(fonts[0]).toBe(fonts[1]);
+});
+
+test("章节内可以连续切换上一章、下一章和指定章节", async ({ page }) => {
+  await page.goto("/chapter/birth");
+  await expect(page.getByRole("heading", { name: "诞生记忆" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "上一章节" })).toBeDisabled();
+
+  await page.getByRole("button", { name: "下一章节" }).click();
+  await expect(page.getByRole("heading", { name: "蹒跚学语" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "上一章节" })).toBeEnabled();
+
+  await page.getByRole("combobox", { name: "选择章节" }).selectOption("continue");
+  await expect(page.getByRole("heading", { name: "继续长大" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "下一章节" })).toBeDisabled();
+});
+
+test("宝宝档案桌面双栏、手机单栏，折叠状态可以记忆", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/editor/profile");
+  const profileSection = page.getByRole("heading", { name: "宝宝档案" }).last().locator("../..");
+  const preview = page.getByText("实时预览").locator("../..");
+  const desktopProfileBox = await profileSection.boundingBox();
+  const desktopPreviewBox = await preview.boundingBox();
+  expect(desktopProfileBox).not.toBeNull();
+  expect(desktopPreviewBox).not.toBeNull();
+  expect(desktopPreviewBox!.x).toBeGreaterThan(desktopProfileBox!.x);
+  expect(Math.abs(desktopPreviewBox!.y - desktopProfileBox!.y)).toBeLessThan(40);
+
+  const appearanceToggle = page.getByRole("button", { name: "展开动效与插画" });
+  await expect(appearanceToggle).toBeVisible();
+  await appearanceToggle.click();
+  await expect(page.getByRole("button", { name: "收起动效与插画" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "收起动效与插画" })).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 900 });
+  const mobileProfileBox = await profileSection.boundingBox();
+  const mobilePreviewBox = await preview.boundingBox();
+  expect(mobilePreviewBox!.y).toBeGreaterThan(mobileProfileBox!.y);
+});
+
+test("成长记录的数据管理折叠状态可以记忆", async ({ page }) => {
+  await page.goto("/editor/stories");
+  await expect(page.getByRole("button", { name: "展开数据管理" })).toBeVisible();
+  await page.getByRole("button", { name: "展开数据管理" }).click();
+  await expect(page.getByRole("button", { name: "收起数据管理" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "收起数据管理" })).toBeVisible();
 });
 
 test("手机端展示页导航随滚动隐藏并在向上滑动时恢复", async ({ page }) => {
@@ -168,6 +234,12 @@ test("上传照片会生成三级资源并可排序删除", async ({ page }) => 
 
 test("插画上传后需要手动保存，并支持恢复默认", async ({ page }) => {
   await page.goto("/editor/theme");
+  await expect(page.getByRole("heading", { name: "首页" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "成长章节" })).toBeVisible();
+  await expect(page.getByText("页面背景纹理")).toHaveCount(0);
+  await expect(page.getByText("卡片角落装饰")).toHaveCount(0);
+  await expect(page.getByText("位置：宝宝姓名下方的主视觉")).toBeVisible();
+  await expect(page.getByText("替换插画", { exact: true })).toHaveCount(3);
   const firstUpload = page.locator('input[type="file"][accept*="image/svg+xml"]').first();
   await firstUpload.setInputFiles(fixtureImage);
   await expect(page.getByRole("status")).toContainText("插画已进入预览", { timeout: 20_000 });

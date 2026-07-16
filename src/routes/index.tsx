@@ -134,6 +134,14 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
     setChapterId(null);
   };
 
+  const selectChapter = (id: string) => {
+    setNavigationView("chapters");
+    setActiveStory(null);
+    setViewer(null);
+    setChapterId(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const nextStory = () => {
     if (!activeStory || !storyChapter) return;
     setActiveStory({
@@ -161,8 +169,10 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
           <ChapterTimeline
             key={chapter.id}
             chapter={chapter}
+            chapters={album.chapters}
             theme={activeTheme}
             onBack={returnToDirectory}
+            onSelectChapter={selectChapter}
             onOpenStory={(_, storyIndex) => setActiveStory({ chapterId: chapter.id, storyIndex })}
           />
         ) : (

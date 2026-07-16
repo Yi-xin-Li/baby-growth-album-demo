@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowUp,
   Check,
+  ChevronDown,
   Download,
   FileUp,
   ImagePlus,
@@ -13,7 +14,7 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { AlbumNavigation } from "@/components/album/AlbumNavigation";
 import { useAlbumDraft } from "@/hooks/use-album-draft";
@@ -247,7 +248,7 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
           </a>
           <div>
             <p className="text-[10px] tracking-[0.25em] text-neutral-400">LOCAL ALBUM STUDIO</p>
-            <h1 className="font-bold">{mode === "profile" ? "宝宝资料" : "成长故事"}</h1>
+            <h1 className="font-bold">{mode === "profile" ? "宝宝档案" : "成长记录"}</h1>
           </div>
         </div>
         <div className="flex items-center gap-2 text-[11px] text-neutral-500">
@@ -260,11 +261,32 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
         </div>
       </header>
 
-      <div className={`mx-auto p-4 lg:p-7 ${mode === "profile" ? "max-w-2xl" : "max-w-4xl"}`}>
-        <div className="space-y-5">
+      {editorMessage && (
+        <p
+          role="status"
+          className="mx-4 mt-4 rounded-2xl bg-black px-4 py-3 text-center text-xs text-white lg:mx-auto lg:max-w-4xl"
+        >
+          {editorMessage}
+        </p>
+      )}
+
+      <div
+        className={`mx-auto p-4 lg:p-7 ${
+          mode === "profile"
+            ? "grid max-w-6xl gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,.9fr)]"
+            : "max-w-4xl"
+        }`}
+      >
+        <div className={mode === "profile" ? "contents" : "space-y-5"}>
           {mode === "profile" && (
             <>
-              <EditorSection title="宝宝资料" description="修改后约半秒自动保存，无需点击提交。">
+              <EditorSection
+                title="宝宝档案"
+                description="修改后约半秒自动保存，无需点击提交。"
+                collapsible
+                storageKey="baby-album-ui:profile-editor"
+                className="order-1 lg:col-start-1 lg:row-start-1"
+              >
                 <div className="grid gap-4 sm:grid-cols-2">
                   <EditorField label="宝宝姓名">
                     <input
@@ -300,6 +322,10 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
               <EditorSection
                 title="动效与插画"
                 description="调整展示动画，或替换页面中预留的插画。"
+                collapsible
+                defaultOpen={false}
+                storageKey="baby-album-ui:profile-appearance"
+                className="order-3 lg:col-span-2 lg:row-start-2"
               >
                 <label className="flex min-h-12 items-center justify-between rounded-2xl bg-white/70 px-4 text-xs font-bold">
                   <span>
@@ -354,8 +380,10 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
           {mode === "stories" && (
             <>
               <EditorSection
-                title="成长故事"
+                title="成长记录"
                 description={`当前共有 ${storyCount} 篇故事，可在受控结构内新增、修改和删除。`}
+                collapsible
+                storageKey="baby-album-ui:stories-editor"
               >
                 <div className="grid gap-4 sm:grid-cols-[170px_1fr]">
                   <div className="space-y-3">
@@ -569,8 +597,11 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
               </EditorSection>
 
               <EditorSection
-                title="配置导入与导出"
-                description="JSON 用于迁移配置；完整媒体交付包将在下一步生成 ZIP。"
+                title="数据管理"
+                description="导入、导出或恢复相册数据。"
+                collapsible
+                defaultOpen={false}
+                storageKey="baby-album-ui:stories-data"
               >
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -593,32 +624,23 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                     />
                   </label>
                 </div>
-                {editorMessage && (
-                  <p
-                    role="status"
-                    className="mt-4 rounded-xl bg-neutral-100 px-3 py-2 text-xs text-neutral-600"
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-xs text-amber-900">恢复演示数据会覆盖当前本地草稿。</p>
+                  <button
+                    type="button"
+                    onClick={() => window.confirm("确定恢复默认演示数据吗？") && reset()}
+                    className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-3 text-xs shadow-sm"
                   >
-                    {editorMessage}
-                  </p>
-                )}
+                    <RotateCcw className="size-3.5" /> 恢复演示数据
+                  </button>
+                </div>
               </EditorSection>
-
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-xs text-amber-900">恢复演示数据会覆盖当前本地草稿。</p>
-                <button
-                  type="button"
-                  onClick={() => window.confirm("确定恢复默认演示数据吗？") && reset()}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-3 text-xs shadow-sm"
-                >
-                  <RotateCcw className="size-3.5" /> 恢复演示数据
-                </button>
-              </div>
             </>
           )}
         </div>
 
         {mode === "profile" && (
-          <aside className="mt-5">
+          <aside className="order-2 lg:col-start-2 lg:row-start-1">
             <div className="overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-xl">
               <div className="flex items-center justify-between border-b border-black/5 px-5 py-3">
                 <div>
@@ -635,7 +657,7 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                 </a>
               </div>
               <div
-                className="relative min-h-[520px] overflow-hidden p-7 text-center"
+                className="relative min-h-[440px] overflow-hidden p-6 text-center"
                 data-album-theme="scrapbook"
                 style={{ background: "var(--paper)", color: "var(--ink)" }}
               >
@@ -678,16 +700,56 @@ function EditorSection({
   title,
   description,
   children,
+  collapsible = false,
+  defaultOpen = true,
+  storageKey,
+  className = "",
 }: {
   title: string;
   description: string;
   children: ReactNode;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+  storageKey?: string;
+  className?: string;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (!storageKey) return;
+    const savedState = window.localStorage.getItem(storageKey);
+    if (savedState === "open") setOpen(true);
+    if (savedState === "closed") setOpen(false);
+  }, [storageKey]);
+
+  const toggle = () => {
+    const nextOpen = !open;
+    setOpen(nextOpen);
+    if (storageKey) window.localStorage.setItem(storageKey, nextOpen ? "open" : "closed");
+  };
+
   return (
-    <section className="rounded-3xl border border-black/5 bg-white/65 p-5 shadow-sm sm:p-6">
-      <h2 className="text-lg font-bold">{title}</h2>
-      <p className="mt-1 text-xs leading-5 text-neutral-500">{description}</p>
-      <div className="mt-5">{children}</div>
+    <section
+      className={`rounded-3xl border border-black/5 bg-white/65 p-5 shadow-sm sm:p-6 ${className}`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold">{title}</h2>
+          <p className="mt-1 text-xs leading-5 text-neutral-500">{description}</p>
+        </div>
+        {collapsible && (
+          <button
+            type="button"
+            aria-label={`${open ? "收起" : "展开"}${title}`}
+            aria-expanded={open}
+            onClick={toggle}
+            className="grid size-9 shrink-0 place-items-center rounded-full bg-white shadow-sm"
+          >
+            <ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
+          </button>
+        )}
+      </div>
+      {(!collapsible || open) && <div className="mt-5">{children}</div>}
     </section>
   );
 }

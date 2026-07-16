@@ -13,20 +13,51 @@ export const Route = createFileRoute("/editor_/theme")({
   component: IllustrationEditor,
 });
 
-const slotDetails: Array<{
+type SlotDetail = {
   id: IllustrationSlotId;
   name: string;
+  location: string;
   recommendation: string;
+};
+
+const slotGroups: Array<{
+  name: string;
+  description: string;
+  slots: SlotDetail[];
 }> = [
-  { id: "coverHero", name: "封面主插画", recommendation: "竖版透明图，建议 1200 × 1500" },
-  { id: "coverDecoration", name: "封面小装饰", recommendation: "透明图，建议 600 × 600" },
-  { id: "pageTexture", name: "页面背景纹理", recommendation: "可平铺纹理，建议 1200 × 1200" },
-  { id: "timelineMarker", name: "时间轴节点", recommendation: "小型透明图，建议 256 × 256" },
-  { id: "cardDecoration", name: "卡片角落装饰", recommendation: "横版透明图，建议 600 × 300" },
-  { id: "noteDecoration", name: "便签装饰", recommendation: "透明图，建议 500 × 500" },
-  { id: "noteBackground", name: "便签背景", recommendation: "竖版浅色纹理，建议 900 × 1200" },
-  { id: "emptyState", name: "空内容插画", recommendation: "方形透明图，建议 800 × 800" },
+  {
+    name: "首页",
+    description: "控制首页封面和成长章节分界处的插画。",
+    slots: [
+      {
+        id: "coverHero",
+        name: "封面主插画",
+        location: "宝宝姓名下方的主视觉",
+        recommendation: "竖版透明图，建议 1200 × 1500",
+      },
+      {
+        id: "coverDecoration",
+        name: "章节分界装饰",
+        location: "首页与成长章节的颜色分界处",
+        recommendation: "透明图，建议 600 × 600",
+      },
+    ],
+  },
+  {
+    name: "成长章节",
+    description: "控制每篇时间轴故事左侧的节点插画。",
+    slots: [
+      {
+        id: "timelineMarker",
+        name: "时间轴节点",
+        location: "成长章节中每篇故事左侧",
+        recommendation: "小型透明图，建议 256 × 256",
+      },
+    ],
+  },
 ];
+
+const slotDetails = slotGroups.flatMap((group) => group.slots);
 
 function IllustrationEditor() {
   const { album, status } = useAlbumDraft();
@@ -146,65 +177,80 @@ function IllustrationEditor() {
           )}
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {slotDetails.map((slot) => {
-            const custom = draftIllustrations[slot.id];
-            const source = custom ?? fixedAlbumTheme.illustrations[slot.id];
-            return (
-              <section
-                key={slot.id}
-                className="overflow-hidden rounded-3xl border border-black/5 bg-white p-4 shadow-sm"
-              >
-                <div className="grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl bg-[linear-gradient(145deg,#faf7f0,#eef2e7)]">
-                  {source ? (
-                    <img
-                      src={source}
-                      alt={slot.name}
-                      className="h-full w-full object-contain p-3"
-                    />
-                  ) : (
-                    <span className="text-xs text-neutral-400">默认留白</span>
-                  )}
-                </div>
-                <div className="mt-4 flex items-start justify-between gap-2">
-                  <div>
-                    <h2 className="text-sm font-bold">{slot.name}</h2>
-                    <p className="mt-1 text-[10px] leading-4 text-neutral-400">
-                      {slot.recommendation}
-                    </p>
-                  </div>
-                  {custom && (
-                    <span className="rounded-full bg-emerald-50 px-2 py-1 text-[9px] text-emerald-700">
-                      已自定义
-                    </span>
-                  )}
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <label className="inline-flex min-h-10 flex-1 cursor-pointer items-center justify-center gap-1 rounded-xl bg-black px-3 text-[10px] text-white">
-                    <ImagePlus className="size-3" /> 替换插画
-                    <input
-                      type="file"
-                      accept="image/png,image/webp,image/svg+xml"
-                      className="sr-only"
-                      onChange={(event) => {
-                        void upload(slot.id, event.target.files?.[0]);
-                        event.target.value = "";
-                      }}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    disabled={!custom}
-                    onClick={() => setIllustration(slot.id)}
-                    aria-label={`恢复${slot.name}默认插画`}
-                    className="grid size-10 place-items-center rounded-xl bg-neutral-100 disabled:opacity-30"
-                  >
-                    <RotateCcw className="size-3.5" />
-                  </button>
-                </div>
-              </section>
-            );
-          })}
+        <div className="mt-5 space-y-6">
+          {slotGroups.map((group) => (
+            <section key={group.name}>
+              <h2 className="text-base font-bold">{group.name}</h2>
+              <p className="mt-1 text-xs text-neutral-500">{group.description}</p>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {group.slots.map((slot) => {
+                  const custom = draftIllustrations[slot.id];
+                  const source = custom ?? fixedAlbumTheme.illustrations[slot.id];
+                  return (
+                    <article
+                      key={slot.id}
+                      className="overflow-hidden rounded-3xl border border-black/5 bg-white p-4 shadow-sm"
+                    >
+                      <div className="grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl bg-[linear-gradient(145deg,#faf7f0,#eef2e7)]">
+                        {source ? (
+                          <img
+                            src={source}
+                            alt={slot.name}
+                            className="h-full w-full object-contain p-3"
+                          />
+                        ) : (
+                          <span className="text-xs text-neutral-400">默认留白</span>
+                        )}
+                      </div>
+                      <div className="mt-4 flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="text-sm font-bold">{slot.name}</h3>
+                          <p className="mt-1 text-[10px] leading-4 text-neutral-500">
+                            位置：{slot.location}
+                          </p>
+                          <p className="mt-1 text-[10px] leading-4 text-neutral-400">
+                            {slot.recommendation}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-1 text-[9px] ${
+                            custom
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-neutral-100 text-neutral-500"
+                          }`}
+                        >
+                          {custom ? "已自定义" : "使用默认"}
+                        </span>
+                      </div>
+                      <div className="mt-4 flex gap-2">
+                        <label className="inline-flex min-h-10 flex-1 cursor-pointer items-center justify-center gap-1 rounded-xl bg-black px-3 text-[10px] text-white">
+                          <ImagePlus className="size-3" /> 替换插画
+                          <input
+                            type="file"
+                            accept="image/png,image/webp,image/svg+xml"
+                            className="sr-only"
+                            onChange={(event) => {
+                              void upload(slot.id, event.target.files?.[0]);
+                              event.target.value = "";
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          disabled={!custom}
+                          onClick={() => setIllustration(slot.id)}
+                          aria-label={`恢复${slot.name}默认插画`}
+                          className="grid size-10 place-items-center rounded-xl bg-neutral-100 disabled:opacity-30"
+                        >
+                          <RotateCcw className="size-3.5" />
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
       </div>
       {leaveTarget && (

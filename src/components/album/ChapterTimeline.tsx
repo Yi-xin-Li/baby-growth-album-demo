@@ -1,5 +1,5 @@
 import { motion, useScroll, useSpring } from "framer-motion";
-import { CalendarDays, Images, MoveLeft } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Images, MoveLeft } from "lucide-react";
 import { useRef } from "react";
 import type { AlbumTheme } from "@/themes/album-themes";
 import type { Chapter, Story } from "@/types/album";
@@ -8,13 +8,25 @@ import { ThemeArtwork } from "./ThemeArtwork";
 
 type ChapterTimelineProps = {
   chapter: Chapter;
+  chapters: Chapter[];
   theme: AlbumTheme;
   onBack: () => void;
+  onSelectChapter: (chapterId: string) => void;
   onOpenStory: (story: Story, storyIndex: number) => void;
 };
 
-export function ChapterTimeline({ chapter, theme, onBack, onOpenStory }: ChapterTimelineProps) {
+export function ChapterTimeline({
+  chapter,
+  chapters,
+  theme,
+  onBack,
+  onSelectChapter,
+  onOpenStory,
+}: ChapterTimelineProps) {
   const timelineRef = useRef<HTMLDivElement | null>(null);
+  const chapterIndex = chapters.findIndex((item) => item.id === chapter.id);
+  const previousChapter = chapterIndex > 0 ? chapters[chapterIndex - 1] : null;
+  const nextChapter = chapterIndex >= 0 ? (chapters[chapterIndex + 1] ?? null) : null;
   const { scrollYProgress } = useScroll({
     target: timelineRef,
     offset: ["start 80%", "end 55%"],
@@ -33,13 +45,47 @@ export function ChapterTimeline({ chapter, theme, onBack, onOpenStory }: Chapter
     >
       <ThemeArtwork theme={theme} className="absolute inset-x-0 top-16 h-36 opacity-40" />
       <div className="relative mx-auto max-w-lg">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-xs shadow-sm hover:bg-white"
-        >
-          <MoveLeft className="size-3.5" /> 返回目录
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-xs shadow-sm hover:bg-white"
+          >
+            <MoveLeft className="size-3.5" /> 返回目录
+          </button>
+          <div className="ml-auto flex min-w-0 items-center gap-1 rounded-full bg-white/70 p-1 shadow-sm">
+            <button
+              type="button"
+              disabled={!previousChapter}
+              onClick={() => previousChapter && onSelectChapter(previousChapter.id)}
+              aria-label="上一章节"
+              className="grid size-8 shrink-0 place-items-center rounded-full hover:bg-white disabled:cursor-not-allowed disabled:opacity-25"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <select
+              aria-label="选择章节"
+              value={chapter.id}
+              onChange={(event) => onSelectChapter(event.target.value)}
+              className="min-w-0 max-w-28 bg-transparent px-1 text-xs font-bold outline-none"
+            >
+              {chapters.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={!nextChapter}
+              onClick={() => nextChapter && onSelectChapter(nextChapter.id)}
+              aria-label="下一章节"
+              className="grid size-8 shrink-0 place-items-center rounded-full hover:bg-white disabled:cursor-not-allowed disabled:opacity-25"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
         <div className="flex items-center gap-4 mt-7">
           <div
             className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-black/80 shadow-[3px_3px_0_rgba(0,0,0,0.15)] shrink-0"
