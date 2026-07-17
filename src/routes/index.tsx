@@ -63,6 +63,8 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
     (total, currentChapter) => total + currentChapter.stories.length,
     0,
   );
+  const backgroundOpacity = Math.min(0.65, Math.max(0, album.backgroundOpacity ?? 0.22));
+  const paperOpacity = `${Math.round((1 - backgroundOpacity) * 100)}%`;
   const albumStyle: CSSProperties = album.customBackground
     ? ({
         fontFamily: "'Noto Serif SC', serif",
@@ -72,9 +74,9 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
         backgroundRepeat: "repeat-y",
         backgroundPosition: "center top",
         backgroundAttachment: "scroll",
-        "--paper": "rgb(250 247 239 / 78%)",
-        "--chapter-bg": "rgb(239 247 224 / 78%)",
-        "--story-bg": "rgb(250 239 226 / 78%)",
+        "--paper": `rgb(250 247 239 / ${paperOpacity})`,
+        "--chapter-bg": `rgb(239 247 224 / ${paperOpacity})`,
+        "--story-bg": `rgb(250 239 226 / ${paperOpacity})`,
         "--modal-paper": "rgb(250 247 239 / 96%)",
       } as CSSProperties)
     : { fontFamily: "'Noto Serif SC', serif", color: "var(--ink)" };

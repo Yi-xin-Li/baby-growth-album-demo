@@ -87,7 +87,7 @@ Ctrl + C
 - Git 提交只保存代码、固定插图和项目文档。
 - 重要内容建议定期导出 `album.json` 备份。
 
-背景图片支持 JPG、PNG、WebP，最大 4MB；保存前会压缩为 WebP。背景音乐仅支持 MP3，最大 8MB，使用前请确认拥有相应版权。由于音乐和背景使用 Data URL 本地保存，较大的草稿只保存在 IndexedDB，不再写入 localStorage 镜像。
+背景图片支持 JPG、PNG、WebP，最大 4MB；保存前会压缩为 WebP，并可在个性化设置中调节 0%–65% 的背景透明度，默认保持当前 22% 的显示效果。背景音乐仅支持 MP3，最大 8MB，使用前请确认拥有相应版权。由于音乐和背景使用 Data URL 本地保存，较大的草稿只保存在 IndexedDB，不再写入 localStorage 镜像。
 
 ## 图片素材位置
 

@@ -47,6 +47,9 @@ function PersonalizationEditor() {
   const { album, status } = useAlbumDraft();
   const [message, setMessage] = useState("");
   const [draftBackground, setDraftBackground] = useState(album.customBackground);
+  const [draftBackgroundOpacity, setDraftBackgroundOpacity] = useState(
+    album.backgroundOpacity ?? 0.22,
+  );
   const [draftMusic, setDraftMusic] = useState<MusicDraft | undefined>(album.backgroundMusic);
   const [draftIllustrations, setDraftIllustrations] = useState(album.customIllustrations ?? {});
   const [draftChapters, setDraftChapters] = useState(() => getChapterDrafts(album.chapters));
@@ -58,6 +61,7 @@ function PersonalizationEditor() {
 
   const resetDrafts = useCallback(() => {
     setDraftBackground(album.customBackground);
+    setDraftBackgroundOpacity(album.backgroundOpacity ?? 0.22);
     setDraftMusic(album.backgroundMusic ? { ...album.backgroundMusic } : undefined);
     setDraftIllustrations({ ...(album.customIllustrations ?? {}) });
     setDraftChapters(getChapterDrafts(album.chapters));
@@ -80,10 +84,11 @@ function PersonalizationEditor() {
   const isDirty = useMemo(
     () =>
       draftBackground !== album.customBackground ||
+      draftBackgroundOpacity !== (album.backgroundOpacity ?? 0.22) ||
       JSON.stringify(draftMusic) !== JSON.stringify(album.backgroundMusic) ||
       JSON.stringify(draftIllustrations) !== JSON.stringify(album.customIllustrations ?? {}) ||
       JSON.stringify(draftChapters) !== JSON.stringify(getChapterDrafts(album.chapters)),
-    [album, draftBackground, draftChapters, draftIllustrations, draftMusic],
+    [album, draftBackground, draftBackgroundOpacity, draftChapters, draftIllustrations, draftMusic],
   );
 
   useEffect(() => {
@@ -134,6 +139,7 @@ function PersonalizationEditor() {
       await saveAlbumDraft({
         ...album,
         customBackground: draftBackground,
+        backgroundOpacity: draftBackgroundOpacity,
         backgroundMusic: draftMusic,
         customIllustrations: draftIllustrations,
         chapters: album.chapters.map((chapter) => {
@@ -268,7 +274,7 @@ function PersonalizationEditor() {
               style={
                 draftBackground
                   ? {
-                      backgroundImage: `linear-gradient(rgba(250,247,239,.78), rgba(250,247,239,.78)), url(${draftBackground})`,
+                      backgroundImage: `linear-gradient(rgba(250,247,239,${1 - draftBackgroundOpacity}), rgba(250,247,239,${1 - draftBackgroundOpacity})), url(${draftBackground})`,
                       backgroundPosition: "center top",
                       backgroundRepeat: "repeat-y",
                       backgroundSize: "100% auto",
@@ -280,6 +286,26 @@ function PersonalizationEditor() {
                 {draftBackground ? "自定义背景预览" : "当前纸张背景"}
               </span>
             </div>
+            <label className="mt-4 block rounded-2xl bg-white/75 p-4 text-xs font-bold">
+              <span className="flex items-center justify-between gap-3">
+                <span>背景透明度</span>
+                <span>{Math.round(draftBackgroundOpacity * 100)}%</span>
+              </span>
+              <input
+                aria-label="背景透明度"
+                type="range"
+                min="0"
+                max="0.65"
+                step="0.01"
+                value={draftBackgroundOpacity}
+                disabled={!draftBackground}
+                onChange={(event) => setDraftBackgroundOpacity(Number(event.target.value))}
+                className="mt-3 block w-full accent-black disabled:opacity-35"
+              />
+              <span className="mt-2 block font-normal leading-5 text-neutral-400">
+                数值越高，背景图片越明显；没有上传背景时此设置不会影响纸张底色。
+              </span>
+            </label>
             <div className="mt-4 flex flex-wrap gap-2">
               <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-black px-4 text-xs text-white">
                 <ImagePlus className="size-3.5" /> 上传背景

@@ -16,6 +16,7 @@ const albumSchema = z
     animationEnabled: z.boolean(),
     animationSpeed: z.enum(["slow", "normal"]).default("slow"),
     customBackground: z.string().optional(),
+    backgroundOpacity: z.number().min(0).max(0.65).default(0.22),
     backgroundMusic: z
       .object({
         source: z.string().min(1),

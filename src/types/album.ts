@@ -77,6 +77,7 @@ export type GrowthAlbum = {
   animationSpeed: "slow" | "normal";
   customIllustrations?: Partial<Record<IllustrationSlotId, string>>;
   customBackground?: string;
+  backgroundOpacity?: number;
   backgroundMusic?: {
     source: string;
     name: string;

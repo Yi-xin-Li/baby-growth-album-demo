@@ -314,6 +314,9 @@ test("自定义背景保存后应用到展示页，个性化折叠状态可以�
   );
   await backgroundUpload.setInputFiles(fixtureImage);
   await expect(page.getByRole("status")).toContainText("背景已进入预览", { timeout: 20_000 });
+  const opacitySlider = page.getByRole("slider", { name: "背景透明度" });
+  await expect(opacitySlider).toHaveValue("0.22");
+  await opacitySlider.fill("0.45");
   await page.getByRole("button", { name: "保存设置" }).click();
   await expect(page.getByRole("status")).toContainText("个性化设置已保存");
 
@@ -323,6 +326,9 @@ test("自定义背景保存后应用到展示页，个性化折叠状态可以�
 
   await page.goto("/");
   await expect(page.locator("main")).toHaveCSS("background-image", /data:image\/webp/);
+  expect(
+    await page.locator("main").evaluate((element) => element.style.getPropertyValue("--paper")),
+  ).toContain("55%");
 });
 
 test("背景音乐保存后显示播放器并保持默认暂停", async ({ page }) => {

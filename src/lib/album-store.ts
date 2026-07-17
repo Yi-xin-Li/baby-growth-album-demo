@@ -27,6 +27,7 @@ function normalizeAlbum(album: GrowthAlbum): GrowthAlbum {
     animationSpeed: album.animationSpeed ?? "slow",
     customIllustrations: album.customIllustrations ?? {},
     customBackground: album.customBackground || undefined,
+    backgroundOpacity: Math.min(0.65, Math.max(0, album.backgroundOpacity ?? 0.22)),
     backgroundMusic:
       music?.source && music.name
         ? {
