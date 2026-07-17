@@ -12,7 +12,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "npm run dev -- --host 127.0.0.1 --port 8080",
+    command: "npm.cmd run dev -- --host 127.0.0.1 --port 8080",
     url: "http://127.0.0.1:8080",
     reuseExistingServer: true,
     timeout: 120_000,

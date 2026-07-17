@@ -43,7 +43,7 @@ export function StoryDetailModal({
             exit={{ y: "100%", opacity: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="relative w-full sm:max-w-md h-[92dvh] sm:h-[88vh] rounded-t-3xl sm:rounded-3xl overflow-y-auto shadow-2xl"
-            style={{ background: "var(--paper)" }}
+            style={{ background: "var(--modal-paper, var(--paper))" }}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="sticky top-0 z-10 flex justify-between bg-[linear-gradient(to_bottom,var(--paper)_75%,transparent)] px-4 py-3">

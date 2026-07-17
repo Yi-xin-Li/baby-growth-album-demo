@@ -22,7 +22,6 @@ import { downloadAlbumJson, parseAlbumJson, validateAlbumForExport } from "@/lib
 import { createImageVariants, maxImagesPerStory } from "@/lib/image-processing";
 import { processIllustration } from "@/lib/illustration-processing";
 import { getImageSource } from "@/lib/album-media";
-import { fixedAlbumTheme } from "@/themes/album-themes";
 import type { GrowthAlbum, ImageMedia, Story } from "@/types/album";
 
 export const Route = createFileRoute("/editor")({
@@ -44,7 +43,6 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
   const [editorMessage, setEditorMessage] = useState("");
   const chapter = album.chapters.find((item) => item.id === chapterId) ?? album.chapters[0];
   const story = chapter?.stories.find((item) => item.id === storyId) ?? chapter?.stories[0];
-  const activeTheme = fixedAlbumTheme;
   const statusText = {
     loading: "读取草稿…",
     saving: "正在自动保存…",
@@ -236,8 +234,8 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
 
   return (
     <main className="min-h-screen bg-[#f4f1eb] pt-[52px] text-[#2e2a25]">
-      <AlbumNavigation active={mode} />
-      <header className="sticky top-[52px] z-30 flex min-h-14 items-center justify-between border-b border-black/5 bg-[#f4f1eb]/90 px-4 backdrop-blur sm:px-7">
+      <AlbumNavigation active={mode} autoHide />
+      <header className="flex min-h-14 items-center justify-between border-b border-black/5 bg-[#f4f1eb]/90 px-4 backdrop-blur sm:px-7">
         <div className="flex items-center gap-3">
           <a
             href="/"
@@ -270,14 +268,8 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
         </p>
       )}
 
-      <div
-        className={`mx-auto p-4 lg:p-7 ${
-          mode === "profile"
-            ? "grid max-w-6xl gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,.9fr)]"
-            : "max-w-4xl"
-        }`}
-      >
-        <div className={mode === "profile" ? "contents" : "space-y-5"}>
+      <div className={`mx-auto p-4 lg:p-7 ${mode === "profile" ? "max-w-3xl" : "max-w-4xl"}`}>
+        <div className="space-y-5">
           {mode === "profile" && (
             <>
               <EditorSection
@@ -285,7 +277,6 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                 description="修改后约半秒自动保存，无需点击提交。"
                 collapsible
                 storageKey="baby-album-ui:profile-editor"
-                className="order-1 lg:col-start-1 lg:row-start-1"
               >
                 <div className="grid gap-4 sm:grid-cols-2">
                   <EditorField label="宝宝姓名">
@@ -325,7 +316,6 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                 collapsible
                 defaultOpen={false}
                 storageKey="baby-album-ui:profile-appearance"
-                className="order-3 lg:col-span-2 lg:row-start-2"
               >
                 <label className="flex min-h-12 items-center justify-between rounded-2xl bg-white/70 px-4 text-xs font-bold">
                   <span>
@@ -638,59 +628,6 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
             </>
           )}
         </div>
-
-        {mode === "profile" && (
-          <aside className="order-2 lg:col-start-2 lg:row-start-1">
-            <div className="overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-xl">
-              <div className="flex items-center justify-between border-b border-black/5 px-5 py-3">
-                <div>
-                  <p className="text-[10px] tracking-[.2em] text-neutral-400">LIVE PREVIEW</p>
-                  <p className="text-sm font-bold">实时预览</p>
-                </div>
-                <a
-                  href="/preview"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-full bg-black px-3 py-2 text-[10px] text-white"
-                >
-                  打开完整网站
-                </a>
-              </div>
-              <div
-                className="relative min-h-[440px] overflow-hidden p-6 text-center"
-                data-album-theme="scrapbook"
-                style={{ background: "var(--paper)", color: "var(--ink)" }}
-              >
-                <div
-                  className="absolute inset-x-0 top-0 h-2"
-                  style={{
-                    background: `linear-gradient(90deg, ${activeTheme.swatches.join(",")})`,
-                  }}
-                />
-                <p className="mt-12 text-[9px] tracking-[.3em] text-neutral-400">
-                  {activeTheme.englishName}
-                </p>
-                <h2 className="mt-4 pl-[.35em] text-3xl font-bold tracking-[.35em]">
-                  {album.profile.displayName || "宝宝姓名"}
-                </h2>
-                <p className="mt-2 text-[10px] tracking-[.25em] text-neutral-500">
-                  {album.profile.romanizedName}
-                </p>
-                <div
-                  className="mx-auto mt-10 grid size-40 place-items-center rounded-[40%_60%_48%_52%] text-6xl"
-                  style={{ background: `${activeTheme.swatches[1]}35` }}
-                >
-                  {activeTheme.motif}
-                </div>
-                <p className="mt-8 text-xs text-neutral-500">{album.profile.birthDate}</p>
-                <p className="mx-auto mt-5 max-w-xs text-sm leading-7">{album.profile.welcome}</p>
-                <p className="mt-10 text-[10px] tracking-[.25em] text-neutral-400">
-                  {storyCount} STORIES · {album.chapters.length} CHAPTERS
-                </p>
-              </div>
-            </div>
-          </aside>
-        )}
       </div>
     </main>
   );

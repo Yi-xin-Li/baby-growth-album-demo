@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlbumNavigation } from "@/components/album/AlbumNavigation";
+import { BackgroundMusicPlayer } from "@/components/album/BackgroundMusicPlayer";
 import { ChapterDirectory } from "@/components/album/ChapterDirectory";
 import { ChapterTimeline } from "@/components/album/ChapterTimeline";
 import { CoverSection } from "@/components/album/CoverSection";
@@ -11,6 +12,7 @@ import { demoAlbum } from "@/data/demo-album";
 import { getStoryMedia } from "@/lib/album-media";
 import { useAlbumDraft } from "@/hooks/use-album-draft";
 import { fixedAlbumTheme } from "@/themes/album-themes";
+import type { CSSProperties } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -61,6 +63,21 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
     (total, currentChapter) => total + currentChapter.stories.length,
     0,
   );
+  const albumStyle: CSSProperties = album.customBackground
+    ? ({
+        fontFamily: "'Noto Serif SC', serif",
+        color: "var(--ink)",
+        backgroundImage: `url("${album.customBackground}")`,
+        backgroundSize: "100% auto",
+        backgroundRepeat: "repeat-y",
+        backgroundPosition: "center top",
+        backgroundAttachment: "scroll",
+        "--paper": "rgb(250 247 239 / 78%)",
+        "--chapter-bg": "rgb(239 247 224 / 78%)",
+        "--story-bg": "rgb(250 239 226 / 78%)",
+        "--modal-paper": "rgb(250 247 239 / 96%)",
+      } as CSSProperties)
+    : { fontFamily: "'Noto Serif SC', serif", color: "var(--ink)" };
 
   useEffect(() => {
     if (!activeStory && !viewer) return;
@@ -155,7 +172,7 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
       data-album-theme="scrapbook"
       data-animation-enabled={album.animationEnabled}
       className="min-h-screen w-full overflow-x-hidden"
-      style={{ fontFamily: "'Noto Serif SC', serif", color: "var(--ink)" }}
+      style={albumStyle}
     >
       <AlbumNavigation
         active={navigationView}
@@ -212,6 +229,7 @@ export function AlbumPage({ initialChapterId, initialStoryId }: AlbumPageProps =
         onClose={() => setViewer(null)}
         onChange={(index) => setViewer((current) => (current ? { ...current, index } : current))}
       />
+      <BackgroundMusicPlayer music={album.backgroundMusic} />
     </main>
   );
 }

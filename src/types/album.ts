@@ -76,5 +76,12 @@ export type GrowthAlbum = {
   animationEnabled: boolean;
   animationSpeed: "slow" | "normal";
   customIllustrations?: Partial<Record<IllustrationSlotId, string>>;
+  customBackground?: string;
+  backgroundMusic?: {
+    source: string;
+    name: string;
+    volume: number;
+    loop: boolean;
+  };
   chapters: Chapter[];
 };

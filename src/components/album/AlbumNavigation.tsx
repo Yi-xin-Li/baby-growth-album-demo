@@ -5,6 +5,7 @@ type AlbumNavigationProps = {
   onHome?: () => void;
   onOpenDirectory?: () => void;
   autoHide?: boolean;
+  onNavigate?: (target: string) => boolean;
 };
 
 const baseClass =
@@ -15,38 +16,80 @@ export function AlbumNavigation({
   onHome,
   onOpenDirectory,
   autoHide = false,
+  onNavigate,
 }: AlbumNavigationProps) {
   const [hidden, setHidden] = useState(false);
   const lastScrollYRef = useRef(0);
+  const touchYRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!autoHide) return;
+    let intentFrameId = 0;
 
-    const handleScroll = () => {
+    const updateVisibility = () => {
       const currentScrollY = window.scrollY;
       const scrollDistance = currentScrollY - lastScrollYRef.current;
 
       if (currentScrollY <= 24) {
         setHidden(false);
-      } else if (Math.abs(scrollDistance) >= 8) {
-        setHidden(scrollDistance > 0 && currentScrollY > 96);
-      }
+      } else if (scrollDistance > 0 && currentScrollY > 96) setHidden(true);
+      else if (scrollDistance < 0) setHidden(false);
 
       lastScrollYRef.current = currentScrollY;
     };
 
+    const applyScrollIntent = (direction: number) => {
+      if (intentFrameId) window.cancelAnimationFrame(intentFrameId);
+      intentFrameId = window.requestAnimationFrame(() => {
+        intentFrameId = 0;
+        if (window.scrollY <= 24 || direction < 0) setHidden(false);
+        else if (direction > 0 && window.scrollY > 96) setHidden(true);
+        lastScrollYRef.current = window.scrollY;
+      });
+    };
+
+    const handleWheel = (event: WheelEvent) => applyScrollIntent(Math.sign(event.deltaY));
+    const handleTouchStart = (event: TouchEvent) => {
+      touchYRef.current = event.touches[0]?.clientY ?? null;
+    };
+    const handleTouchMove = (event: TouchEvent) => {
+      const currentY = event.touches[0]?.clientY;
+      if (currentY === undefined || touchYRef.current === null) return;
+      applyScrollIntent(Math.sign(touchYRef.current - currentY));
+      touchYRef.current = currentY;
+    };
+
     lastScrollYRef.current = window.scrollY;
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    document.addEventListener("scroll", updateVisibility, { passive: true, capture: true });
+    window.addEventListener("wheel", handleWheel, { passive: true });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    return () => {
+      if (intentFrameId) window.cancelAnimationFrame(intentFrameId);
+      window.removeEventListener("scroll", updateVisibility);
+      document.removeEventListener("scroll", updateVisibility, true);
+      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+    };
   }, [autoHide]);
 
   const itemClass = (id: AlbumNavigationProps["active"]) =>
     `${baseClass} ${active === id ? "bg-black text-white shadow-md" : "bg-white/75 text-neutral-600 shadow-sm hover:bg-white"}`;
 
+  const linkProps = (target: string) => ({
+    href: target,
+    onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (onNavigate?.(target) === false) event.preventDefault();
+    },
+  });
+
   return (
     <nav
       aria-label="主要页面导航"
       data-hidden={hidden}
+      data-auto-hide={autoHide}
       className={`fixed inset-x-0 top-0 z-40 px-2 py-2 backdrop-blur-md transition-transform duration-300 motion-reduce:transition-none ${hidden ? "-translate-y-full" : "translate-y-0"}`}
       style={{
         background:
@@ -59,7 +102,7 @@ export function AlbumNavigation({
             首页
           </button>
         ) : (
-          <a href="/" className={itemClass("home")}>
+          <a {...linkProps("/")} className={itemClass("home")}>
             首页
           </a>
         )}
@@ -68,14 +111,14 @@ export function AlbumNavigation({
             成长章节
           </button>
         ) : (
-          <a href="/#chapters" className={itemClass("chapters")}>
+          <a {...linkProps("/#chapters")} className={itemClass("chapters")}>
             成长章节
           </a>
         )}
-        <a href="/editor/profile" className={itemClass("profile")}>
+        <a {...linkProps("/editor/profile")} className={itemClass("profile")}>
           宝宝档案
         </a>
-        <a href="/editor/stories" className={itemClass("stories")}>
+        <a {...linkProps("/editor/stories")} className={itemClass("stories")}>
           成长记录
         </a>
       </div>
