@@ -368,7 +368,27 @@ test("背景音乐保存后显示播放器并保持默认暂停", async ({ page 
   await page.goto("/");
   await expect(page.getByLabel("背景音乐播放器")).toBeVisible();
   await expect(page.getByRole("button", { name: "播放背景音乐" })).toBeVisible();
+  await expect(page.getByTestId("music-off-indicator")).toBeVisible();
   expect(await page.locator("audio").evaluate((audio) => (audio as HTMLAudioElement).paused)).toBe(
     true,
   );
+
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.play = function play() {
+      this.dispatchEvent(new Event("play"));
+      return Promise.resolve();
+    };
+    HTMLMediaElement.prototype.pause = function pause() {
+      this.dispatchEvent(new Event("pause"));
+    };
+  });
+  await page.reload();
+  await page.getByRole("button", { name: "播放背景音乐" }).click();
+  await expect(page.getByRole("button", { name: "暂停背景音乐" })).toBeVisible();
+  await expect(page.getByLabel("背景音乐播放器")).toHaveAttribute("data-playing", "true");
+  await expect(page.getByTestId("music-off-indicator")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "暂停背景音乐" }).click();
+  await expect(page.getByRole("button", { name: "播放背景音乐" })).toBeVisible();
+  await expect(page.getByTestId("music-off-indicator")).toBeVisible();
 });

@@ -1,4 +1,4 @@
-import { Music2, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { Music2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { GrowthAlbum } from "@/types/album";
 
@@ -7,12 +7,9 @@ type BackgroundMusic = NonNullable<GrowthAlbum["backgroundMusic"]>;
 export function BackgroundMusicPlayer({ music }: { music?: BackgroundMusic }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [volume, setVolume] = useState(music?.volume ?? 0.3);
 
   useEffect(() => {
     setPlaying(false);
-    setVolume(music?.volume ?? 0.3);
     audioRef.current?.pause();
   }, [music?.source, music?.volume]);
 
@@ -44,48 +41,47 @@ export function BackgroundMusicPlayer({ music }: { music?: BackgroundMusic }) {
   return (
     <aside
       aria-label="背景音乐播放器"
-      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-50 flex max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-2xl bg-black/80 p-2 text-white shadow-xl backdrop-blur-md sm:right-5"
+      data-playing={playing}
+      className="fixed right-3 z-50 sm:right-5"
+      style={{ top: "calc(env(safe-area-inset-top, 0px) + 4.25rem)" }}
     >
       <audio
         ref={audioRef}
         src={music.source}
         loop={music.loop}
-        muted={muted}
-        volume={volume}
+        volume={music.volume}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
       />
-      <Music2 className="hidden size-4 shrink-0 text-white/70 sm:block" />
-      <span className="max-w-24 truncate text-[10px] sm:max-w-36" title={music.name}>
-        {music.name}
-      </span>
       <button
         type="button"
         onClick={() => void togglePlayback()}
-        className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-black"
+        className="group relative grid size-12 place-items-center rounded-full border-2 border-black/75 bg-[color:var(--paper)] text-black shadow-[0_5px_14px_rgba(0,0,0,0.2)] transition-transform duration-200 hover:scale-105 active:scale-90 motion-reduce:transition-none"
         aria-label={playing ? "暂停背景音乐" : "播放背景音乐"}
+        aria-pressed={playing}
+        title={`${playing ? "暂停" : "播放"}：${music.name}`}
       >
-        {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+        {playing && (
+          <span
+            aria-hidden="true"
+            className="absolute -inset-1 rounded-full border-2 border-black/30 animate-pulse motion-reduce:animate-none"
+          />
+        )}
+        <Music2
+          aria-hidden="true"
+          className={`size-6 ${playing ? "animate-[spin_4s_linear_infinite] motion-reduce:animate-none" : ""}`}
+        />
+        {!playing && (
+          <span
+            data-testid="music-off-indicator"
+            aria-hidden="true"
+            className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full border-2 border-[color:var(--paper)] bg-black text-white"
+          >
+            <X className="size-3" strokeWidth={3} />
+          </span>
+        )}
       </button>
-      <button
-        type="button"
-        onClick={() => setMuted((current) => !current)}
-        className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10"
-        aria-label={muted ? "取消静音" : "静音"}
-      >
-        {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-      </button>
-      <input
-        aria-label="背景音乐音量"
-        type="range"
-        min="0"
-        max="1"
-        step="0.05"
-        value={volume}
-        onChange={(event) => setVolume(Number(event.target.value))}
-        className="hidden w-20 accent-white sm:block"
-      />
     </aside>
   );
 }
