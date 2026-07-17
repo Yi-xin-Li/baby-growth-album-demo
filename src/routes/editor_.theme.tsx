@@ -1,5 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ImagePlus, Music2, Pause, Play, RotateCcw, Save, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ImagePlus,
+  Music2,
+  Pause,
+  Play,
+  RotateCcw,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlbumNavigation } from "@/components/album/AlbumNavigation";
 import { PersistentEditorSection } from "@/components/editor/PersistentEditorSection";
@@ -18,6 +28,10 @@ export const Route = createFileRoute("/editor_/theme")({
 
 type ChapterDraft = { id: string; title: string; icon: string };
 type MusicDraft = NonNullable<GrowthAlbum["backgroundMusic"]>;
+type Notice = { text: string; duration: number | null; id: number };
+
+const illustrationAccept =
+  "image/jpeg,image/png,image/webp,image/svg+xml,image/avif,.jpg,.jpeg,.png,.webp,.svg,.avif";
 
 const homeSlots: Array<{
   id: IllustrationSlotId;
@@ -45,7 +59,7 @@ function getChapterDrafts(chapters: GrowthAlbum["chapters"]): ChapterDraft[] {
 
 function PersonalizationEditor() {
   const { album, status } = useAlbumDraft();
-  const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [draftBackground, setDraftBackground] = useState(album.customBackground);
   const [draftBackgroundOpacity, setDraftBackgroundOpacity] = useState(
     album.backgroundOpacity ?? 0.22,
@@ -58,6 +72,16 @@ function PersonalizationEditor() {
   const initializedRef = useRef(false);
   const allowNavigationRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const showNotice = useCallback((text: string, duration: number | null = 3000) => {
+    setNotice({ text, duration, id: Date.now() });
+  }, []);
+
+  useEffect(() => {
+    if (!notice || notice.duration === null) return;
+    const timer = window.setTimeout(() => setNotice(null), notice.duration);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
 
   const resetDrafts = useCallback(() => {
     setDraftBackground(album.customBackground);
@@ -131,7 +155,7 @@ function PersonalizationEditor() {
   const saveSettings = async () => {
     const chapters = draftChapters.map((chapter) => ({ ...chapter, title: chapter.title.trim() }));
     if (chapters.some((chapter) => !chapter.title)) {
-      setMessage("章节名称不能为空");
+      showNotice("章节名称不能为空", 6000);
       return false;
     }
     try {
@@ -148,10 +172,10 @@ function PersonalizationEditor() {
         }),
       });
       setDraftChapters(chapters);
-      setMessage("个性化设置已保存");
+      showNotice("个性化设置已保存");
       return true;
     } catch {
-      setMessage("保存失败，请重试");
+      showNotice("保存失败，请重试", 6000);
       return false;
     }
   };
@@ -159,11 +183,11 @@ function PersonalizationEditor() {
   const uploadBackground = async (file?: File) => {
     if (!file) return;
     try {
-      setMessage("正在压缩背景图片…");
+      showNotice("正在压缩背景图片…", null);
       setDraftBackground(await processBackground(file));
-      setMessage("背景已进入预览，保存后应用到展示页");
+      showNotice("背景已进入预览，保存后应用到展示页");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "背景处理失败");
+      showNotice(error instanceof Error ? error.message : "背景处理失败", 6000);
     }
   };
 
@@ -172,33 +196,33 @@ function PersonalizationEditor() {
     try {
       audioRef.current?.pause();
       setPreviewPlaying(false);
-      setMessage("正在读取背景音乐…");
+      showNotice("正在读取背景音乐…", null);
       setDraftMusic(await processBackgroundMusic(file));
-      setMessage("音乐已进入试听列表，保存后应用到展示页");
+      showNotice("音乐已进入试听列表，保存后应用到展示页");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "音乐处理失败");
+      showNotice(error instanceof Error ? error.message : "音乐处理失败", 6000);
     }
   };
 
   const uploadIllustration = async (slotId: IllustrationSlotId, file?: File) => {
     if (!file) return;
     try {
-      setMessage("正在处理插画…");
+      showNotice("正在处理插画…", null);
       setIllustration(slotId, await processIllustration(file));
-      setMessage("插画已进入预览，保存后生效");
+      showNotice("插画已进入预览，保存后生效");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "插画处理失败");
+      showNotice(error instanceof Error ? error.message : "插画处理失败", 6000);
     }
   };
 
   const uploadChapterIcon = async (chapterId: string, file?: File) => {
     if (!file) return;
     try {
-      setMessage("正在处理章节插画…");
+      showNotice("正在处理章节插画…", null);
       updateChapter(chapterId, { icon: await processIllustration(file) });
-      setMessage("章节插画已进入预览，保存后生效");
+      showNotice("章节插画已进入预览，保存后生效");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "章节插画处理失败");
+      showNotice(error instanceof Error ? error.message : "章节插画处理失败", 6000);
     }
   };
 
@@ -235,7 +259,7 @@ function PersonalizationEditor() {
                 type="button"
                 onClick={() => {
                   resetDrafts();
-                  setMessage("已放弃未保存的修改");
+                  showNotice("已放弃未保存的修改");
                 }}
                 className="min-h-10 rounded-full bg-white px-4 text-[11px] shadow-sm"
               >
@@ -253,13 +277,22 @@ function PersonalizationEditor() {
           </div>
         </header>
 
-        {message && (
-          <p
+        {notice && (
+          <div
+            key={notice.id}
             role="status"
-            className="mt-5 rounded-2xl bg-black px-4 py-3 text-center text-xs text-white"
+            className="fixed left-1/2 top-1/2 z-[80] flex w-[calc(100%_-_2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 items-center justify-between gap-3 rounded-2xl bg-black px-4 py-3 text-xs text-white shadow-2xl sm:static sm:mt-5 sm:w-auto sm:max-w-none sm:translate-x-0 sm:translate-y-0 sm:shadow-none"
           >
-            {message}
-          </p>
+            <span className="flex-1 text-center">{notice.text}</span>
+            <button
+              type="button"
+              aria-label="关闭提示"
+              onClick={() => setNotice(null)}
+              className="grid size-7 shrink-0 place-items-center rounded-full bg-white/10"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
         )}
 
         <div className="mt-5 space-y-5">
@@ -426,7 +459,7 @@ function PersonalizationEditor() {
 
           <PersistentEditorSection
             title="首页插画"
-            description="替换封面主插画与成长章节分界装饰。支持 PNG、WebP、SVG，最大 4MB。"
+            description="替换封面主插画与成长章节分界装饰。支持 JPG、PNG、WebP、SVG、AVIF，最大 4MB。"
             storageKey="baby-album-ui:personalization-home-art"
           >
             <div className="grid gap-4 sm:grid-cols-2">
@@ -450,7 +483,7 @@ function PersonalizationEditor() {
                         <ImagePlus className="size-3" /> 替换插画
                         <input
                           type="file"
-                          accept="image/png,image/webp,image/svg+xml"
+                          accept={illustrationAccept}
                           className="sr-only"
                           onChange={(event) => {
                             void uploadIllustration(slot.id, event.target.files?.[0]);
@@ -512,7 +545,7 @@ function PersonalizationEditor() {
                       <ImagePlus className="size-3" /> 替换章节插画
                       <input
                         type="file"
-                        accept="image/png,image/webp,image/svg+xml"
+                        accept={illustrationAccept}
                         className="sr-only"
                         onChange={(event) => {
                           void uploadChapterIcon(chapter.id, event.target.files?.[0]);

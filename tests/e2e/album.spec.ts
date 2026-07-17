@@ -266,6 +266,15 @@ test("插画上传后需要手动保存，并支持恢复默认", async ({ page 
   await expect(page.getByText("替换插画", { exact: true })).toHaveCount(2);
   await expect(page.getByText("替换章节插画", { exact: true })).toHaveCount(6);
   const firstUpload = page.locator('input[type="file"][accept*="image/svg+xml"]').first();
+  await expect(firstUpload).toHaveAttribute("accept", /image\/jpeg/);
+  await expect(firstUpload).toHaveAttribute("accept", /image\/avif/);
+  await firstUpload.setInputFiles({
+    name: "不支持的插画.gif",
+    mimeType: "image/gif",
+    buffer: Buffer.from("GIF89a"),
+  });
+  await expect(page.getByRole("status")).toContainText("插画仅支持 JPG、PNG、WebP、SVG 或 AVIF");
+  await page.getByRole("button", { name: "关闭提示" }).click();
   await firstUpload.setInputFiles(fixtureImage);
   await expect(page.getByRole("status")).toContainText("插画已进入预览", { timeout: 20_000 });
   const saveButton = page.getByRole("button", { name: "保存设置" });
@@ -280,6 +289,21 @@ test("插画上传后需要手动保存，并支持恢复默认", async ({ page 
   await expect(resetButton).toBeEnabled();
   await resetButton.click();
   await expect(resetButton).toBeDisabled();
+});
+
+test("手机端上传通知在屏幕中央显示并自动消失", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto("/editor/theme");
+  const backgroundUpload = page.locator(
+    'input[type="file"][accept="image/jpeg,image/png,image/webp"]',
+  );
+  await backgroundUpload.setInputFiles(fixtureImage);
+  const notice = page.getByRole("status");
+  await expect(notice).toContainText("背景已进入预览", { timeout: 20_000 });
+  const noticeBox = await notice.boundingBox();
+  expect(noticeBox).not.toBeNull();
+  expect(Math.abs(noticeBox!.y + noticeBox!.height / 2 - 400)).toBeLessThan(30);
+  await expect(notice).toBeHidden({ timeout: 5_000 });
 });
 
 test("章节名称和插画保存后同步到展示页面", async ({ page }) => {
