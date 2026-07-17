@@ -391,4 +391,24 @@ test("背景音乐保存后显示播放器并保持默认暂停", async ({ page 
   await page.getByRole("button", { name: "暂停背景音乐" }).click();
   await expect(page.getByRole("button", { name: "播放背景音乐" })).toBeVisible();
   await expect(page.getByTestId("music-off-indicator")).toBeVisible();
+
+  const musicButton = page.getByRole("button", { name: "播放背景音乐" });
+  const buttonBox = await musicButton.boundingBox();
+  expect(buttonBox).not.toBeNull();
+  await page.mouse.move(buttonBox!.x + buttonBox!.width / 2, buttonBox!.y + buttonBox!.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(400);
+  await expect(page.getByLabel("背景音乐播放器")).toHaveAttribute("data-dragging", "true");
+  await page.mouse.move(24, 220, { steps: 4 });
+  await page.mouse.up();
+  await expect(page.getByLabel("背景音乐播放器")).toHaveAttribute("data-dragging", "false");
+  await expect(musicButton).toHaveAttribute("aria-pressed", "false");
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("baby-album-music-control-position") ?? "null"),
+    ),
+  ).toMatchObject({ x: 8 });
+
+  await page.reload();
+  await expect(page.getByLabel("背景音乐播放器")).toHaveCSS("left", "8px");
 });
