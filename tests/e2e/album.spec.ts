@@ -14,9 +14,9 @@ async function collectRuntimeErrors(page: Page) {
   return errors;
 }
 
-test("访客可以完成章节、故事和高清查看流程", async ({ page }) => {
+test("访客可以浏览默认的空成长章节", async ({ page }) => {
   const errors = await collectRuntimeErrors(page);
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.locator("main")).toHaveAttribute("data-album-theme", "scrapbook");
   await expect(page.getByText("选择主题")).toHaveCount(0);
   const chapterArtwork = page.getByTestId("chapter-birth").locator(":scope > div").first();
@@ -30,26 +30,10 @@ test("访客可以完成章节、故事和高清查看流程", async ({ page }) 
   await expect(chapterArtwork).not.toHaveCSS("box-shadow", "none");
   await expect(page.locator('img[src="/images/decro_baby.png"]')).toBeVisible();
 
-  await page.getByTestId("chapter-birth").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(350);
-  const directoryScrollPosition = await page.evaluate(() => window.scrollY);
-  await page.getByTestId("chapter-birth").press("Enter");
+  await page.goto("/chapter/birth", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "诞生记忆" })).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByTestId("story-s1").locator(":scope > div.absolute")).toHaveCount(0);
-  await page.getByTestId("story-s1").click();
-  await expect(page.getByTestId("story-detail")).toBeVisible();
-  await page.getByTestId("story-hero-media").click();
-  await expect(page.getByTestId("media-viewer")).toBeVisible();
-  await page.getByRole("button", { name: "关闭 ×" }).click();
-  await expect(page.getByTestId("media-viewer")).toBeHidden();
-  await page.getByRole("button", { name: "返回本章" }).click();
-  await expect(page.getByTestId("story-detail")).toBeHidden();
-  await page.getByRole("button", { name: "返回目录" }).click();
-  await expect(page.getByTestId("chapter-birth")).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
-  expect(
-    Math.abs((await page.evaluate(() => window.scrollY)) - directoryScrollPosition),
-  ).toBeLessThan(300);
+  await expect(page.getByText("共 0 篇回忆 · 点击卡片翻阅完整故事")).toBeVisible();
+  await expect(page.locator('[data-testid^="story-"]')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -202,6 +186,7 @@ for (const width of [320, 375, 390, 430, 768, 1280]) {
 
 test("图片缺失时显示占位并保持页面可用", async ({ page }) => {
   await page.goto("/editor/stories");
+  await page.getByRole("button", { name: "新增故事" }).click();
   await page
     .getByRole("textbox", { name: "封面路径（仅保存相对路径或网络地址）" })
     .fill("/missing-test-image.jpg");
@@ -212,18 +197,27 @@ test("图片缺失时显示占位并保持页面可用", async ({ page }) => {
   await expect(page.getByRole("img", { name: /暂未加载/ }).first()).toBeVisible();
 });
 
-test("章节、故事和预览深链接可以直接打开", async ({ page }) => {
+test("章节和预览深链接可以直接打开，已删除的内置故事不会显示", async ({ page }) => {
   await page.goto("/chapter/birth");
   await expect(page.getByRole("heading", { name: "诞生记忆" })).toBeVisible();
   await page.goto("/story/s1");
-  await expect(page.getByTestId("story-detail")).toBeVisible();
+  await expect(page.getByTestId("story-detail")).toHaveCount(0);
   await page.goto("/preview");
   await expect(page.getByRole("heading", { name: "皮君尧" })).toBeVisible();
 });
 
 test("照片查看器支持左右滑动切换", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
-  await page.goto("/story/s1");
+  await page.goto("/editor/stories");
+  await page.getByRole("button", { name: "新增故事" }).click();
+  await page
+    .locator('input[type="file"][multiple][accept*="image/jpeg"]')
+    .setInputFiles([fixtureImage, fixtureImage]);
+  await expect(page.getByRole("status")).toContainText("已生成 2 张图片", { timeout: 20_000 });
+  await expect(page.getByText("草稿已保存")).toBeVisible();
+  await page.goto("/");
+  await page.getByTestId("chapter-birth").click();
+  await page.getByText("新的成长故事").click();
   await page.getByTestId("story-hero-media").click();
   const viewer = page.getByTestId("media-viewer");
   await expect(viewer.getByText(/^1 \/ \d+$/)).toBeVisible();
@@ -245,6 +239,7 @@ test("照片查看器支持左右滑动切换", async ({ page }) => {
 
 test("上传照片会生成三级资源并可排序删除", async ({ page }) => {
   await page.goto("/editor/stories");
+  await page.getByRole("button", { name: "新增故事" }).click();
   const upload = page.locator('input[type="file"][multiple][accept*="image/jpeg"]');
   await upload.setInputFiles(fixtureImage);
   await expect(page.getByRole("status")).toContainText("已生成 1 张图片", { timeout: 20_000 });
