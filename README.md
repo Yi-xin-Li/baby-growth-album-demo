@@ -1,175 +1,231 @@
 # 宝宝成长相册 Demo 1.5 Pro
 
-这是一个以手机端访问为主的宝宝成长纪念网站。项目包含相册展示、成长章节、宝宝档案、成长记录、自定义背景、背景音乐、自定义插画、本地照片处理和数据导入导出等功能。
+一个以手机端体验为主的宝宝成长纪念网站。前端负责相册展示和编辑，FastAPI 后端负责保存宝宝资料、照片、插画、背景和音乐。
 
-当前版本采用固定的 Demo 1.0 视觉风格，不再提供多主题切换。
+> 当前版本在本机运行。使用网站时，前端和后端必须同时保持启动。
 
-## 快速启动
+## 手动启动项目
 
-### 1. 打开 PowerShell
+需要打开两个 PowerShell 窗口：第一个运行后端，第二个运行前端。建议始终先启动后端。
 
-```powershell
-cd "C:\Users\lyx15\Desktop\.lovable"
-```
+### 第一次使用：安装依赖
 
-### 2. 首次使用时安装依赖
-
-如果项目中没有 `node_modules`，执行：
+先把仓库下载到电脑，然后进入项目根目录：
 
 ```powershell
+git clone https://github.com/Yi-xin-Li/baby-growth-album-demo.git
+cd baby-growth-album-demo
 npm.cmd install
 ```
 
-### 3. 启动开发网站
+如果项目已经在电脑中，可以在资源管理器打开项目文件夹，在地址栏输入 `powershell` 并回车。然后创建后端虚拟环境并安装 Python 依赖：
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+cd ..
+```
+
+复制后端配置并设置固定编辑密码：
+
+```powershell
+Copy-Item backend\.env.example backend\.env
+notepad backend\.env
+```
+
+把 `BABY_ALBUM_EDITOR_PIN` 后面的示例文字替换为仅家庭成员知道的密码。`backend/.env` 不会提交到 GitHub。依赖和密码设置成功后，平时启动项目不需要重复执行以上步骤。
+
+### 第一步：手动启动后端
+
+打开第一个 PowerShell 窗口，逐行输入：
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe run.py
+```
+
+后端地址：
+
+```text
+http://127.0.0.1:8000
+```
+
+可以在浏览器打开 `http://127.0.0.1:8000/docs` 检查后端是否正常。启动后不要关闭这个 PowerShell 窗口。
+
+### 第二步：手动启动前端
+
+另外打开一个 PowerShell 窗口，逐行输入：
 
 ```powershell
 npm.cmd run dev
 ```
 
-终端会显示访问地址，通常是：
+终端会显示网页地址，通常为：
 
 ```text
 http://localhost:5173
 ```
 
-按住 `Ctrl` 并点击终端中的地址，或者复制到浏览器打开。
+复制终端实际显示的网址到浏览器中打开。两个 PowerShell 窗口必须同时保持运行。
 
-### 4. 停止网站
+### 手机通过家庭 Wi-Fi 访问
 
-在运行网站的终端窗口中按：
+1. 确保手机和电脑连接同一个可信的家庭 Wi-Fi。
+2. 在 PowerShell 输入 `ipconfig`，找到电脑当前网络的“IPv4 地址”，例如 `192.168.1.8`。
+3. 保持前端和后端两个窗口运行，在手机浏览器打开：
+
+```text
+http://192.168.1.8:5173
+```
+
+前端终端通常也会显示 `Network` 地址，可以直接使用。第一次启动时如果 Windows 防火墙询问权限，只允许“专用网络”，不要允许公共网络。
+
+手机查看相册不需要密码；进入宝宝档案、成长记录或个性化页面时需要 `backend/.env` 中的编辑密码。手机可以修改日常内容和上传照片，但完整备份、恢复和存储设置只在电脑端显示。同一时间只能有一台设备编辑，另一台设备可以选择“强制接管编辑”。
+
+### 停止项目
+
+在前端和后端的 PowerShell 窗口中分别按：
 
 ```text
 Ctrl + C
 ```
 
-`localhost` 依赖当前电脑运行。电脑关机或开发服务停止后，其他设备将无法继续访问。
+## 常见启动问题
+
+### 找不到 `package.json`
+
+这是因为终端不在项目根目录。请在资源管理器打开项目文件夹，在地址栏输入 `powershell` 并回车，再输入：
+
+```powershell
+npm.cmd run dev
+```
+
+### 页面提示“后端未启动”
+
+确认第一个 PowerShell 窗口仍在运行，并尝试打开 `http://127.0.0.1:8000/docs`。只启动前端时，数据保存、照片上传和完整备份不能正常工作。
+
+### 手机能打开网页但看不到自定义照片
+
+- 手机地址必须使用电脑的 IPv4 地址，不能使用手机上的 `localhost` 或 `127.0.0.1`。
+- 确认电脑和手机处于同一 Wi-Fi，并关闭访客网络的设备隔离。
+- 确认 Windows 网络类型为“专用网络”，且防火墙允许 Python 和 Node.js 在专用网络通信。
+- 手机访问地址和前端终端显示的 `Network` 地址应一致。
+
+### 找不到后端 Python
+
+如果提示找不到 `.venv\Scripts\python.exe`，重新执行：
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+### PowerShell 不允许执行 `npm`
+
+请使用 `npm.cmd`，不要只输入 `npm`。
 
 ## 主要页面
 
-| 页面    | 地址                | 用途                |
-| ----- | ----------------- | ----------------- |
-| 首页    | `/`               | 查看宝宝封面和成长相册       |
-| 成长章节  | `/#chapters`      | 直接定位六个成长章节        |
-| 宝宝档案  | `/editor/profile` | 修改姓名、生日、欢迎语和动画    |
-| 成长记录  | `/editor/stories` | 编辑故事、照片、视频封面及章节归属 |
-| 个性化设置 | `/editor/theme`   | 修改背景、音乐、插画和章节名称   |
-| 兼容预览  | `/preview`        | 保留旧链接，不在页面中显示入口   |
+| 页面   | 地址                | 用途              |
+| ---- | ----------------- | --------------- |
+| 首页   | `/`               | 查看宝宝封面和成长相册     |
+| 成长章节 | `/#chapters`      | 选择六个成长章节        |
+| 宝宝档案 | `/editor/profile` | 修改宝宝基础资料和动效设置   |
+| 成长记录 | `/editor/stories` | 管理故事、照片、视频封面和数据 |
+| 个性化  | `/editor/theme`   | 修改背景、音乐、插画和章节名称 |
 
-所有主要页面顶部都有：首页、成长章节、宝宝资料、成长故事四个导航按钮。手机端显示为两行两列，宽屏显示为一行四列。
+顶部常驻五个导航按钮：`首页`、`成长章节`、`宝宝档案`、`成长记录`、`个性化`。
 
-## 当前主要功能
+## 主要功能
 
-- 六个宝宝成长章节与章节时间轴。
-- 成长故事新增、修改、删除和移动。
-- 照片上传、压缩、排序、删除与高清查看。
-- 宝宝档案和成长记录自动保存。
-- 自定义背景、背景音乐、插画及章节名称统一手动保存。
-- 个性化设置支持带记忆的折叠和未保存离开提醒。
-- 相册照片支持左右滑动及方向切换动画。
-- 展示页背景音乐默认暂停，并在浏览器进入后台时停止。
-- 动画开关和动画速度设置。
-- `album.json` 导入与导出。
-- 返回章节目录时恢复之前的浏览位置。
-- 手机端自适应布局。
+- 六个成长章节与章节时间轴
+- 故事新增、修改、删除和排序
+- 照片上传、压缩、排序、滑动浏览和高清查看
+- 宝宝资料与成长记录自动保存
+- 自定义网页背景、背景透明度、背景音乐和插画
+- 自定义章节名称和六张章节插画
+- 带记忆功能的折叠面板
+- 可拖动的音乐悬浮按钮
+- `.baby-album.zip` 完整备份与恢复
+- 旧浏览器缓存一键迁移到后端
+- 家庭局域网手机查看、密码编辑和单设备编辑保护
+- 展示页每10秒同步其他设备保存的新内容
 
-## 数据保存说明
+## 数据保存与备份
 
-编辑页面提交的宝宝资料、故事、照片、背景和音乐不会自动写入项目源码，而是保存在当前浏览器的：
-
-- IndexedDB
-- localStorage（小型数据备份）
-
-因此需要注意：
-
-- 刷新页面或重新启动网站后，当前浏览器通常仍能读取草稿。
-- 换电脑、换浏览器或清除网站数据后，草稿不会自动同步。
-- 宝宝私人照片不会自动上传 GitHub。
-- Git 提交只保存代码、固定插图和项目文档。
-- 重要内容建议定期导出 `album.json` 备份。
-
-背景图片支持 JPG、PNG、WebP，最大 4MB；保存前会压缩为 WebP，并可在个性化设置中调节 0%–65% 的背景透明度，默认保持当前 22% 的显示效果。背景音乐仅支持 MP3，最大 8MB，使用前请确认拥有相应版权。由于音乐和背景使用 Data URL 本地保存，较大的草稿只保存在 IndexedDB，不再写入 localStorage 镜像。
-
-首页和章节插画支持 JPG、PNG、WebP、SVG、AVIF，最大 4MB。上传和保存提示统一使用黑色通知框：手机端显示在屏幕中央，成功提示约 3 秒后自动消失，错误提示约 6 秒后消失，处理中的提示会保留到操作完成，也可以手动关闭。
-
-## 图片素材位置
-
-网站固定素材位于：
+主要数据保存在：
 
 ```text
-public/images/
+backend/data/app.db       SQLite 数据库
+backend/data/media/       照片、背景、插画和音乐
 ```
 
-代码中应使用相对网站路径：
+`backend/data/` 已被 Git 忽略，正常提交代码时不会上传私人照片。不要手动删除该目录。
+
+在“成长记录 → 数据管理”中可以导出 `.baby-album.zip` 完整备份。导入时可直接选择 `.zip` 文件，系统会检查压缩包内部是否为有效的完整备份。更换电脑前，建议先导出完整备份。
+
+## 图片素材
+
+网站运行时使用的内置图片位于：
 
 ```text
-/images/图片名称.png
+frontend/public/images/
 ```
 
-不要在代码中使用类似下面的电脑绝对路径：
+代码中使用网站相对路径，例如：
 
 ```text
-C:\Users\用户名\Desktop\图片.png
+/images/cover_baby.svg
 ```
 
-否则项目复制到其他电脑后会找不到图片。
-
-当前原始设计素材保存在：
-
-```text
-图标等素材/最-网页设计/
-```
+不要使用电脑绝对路径，否则项目复制到其他电脑后会找不到图片。
 
 ## 常用开发命令
 
+以下命令在项目根目录执行：
+
 ```powershell
-# 启动开发环境
+# 启动前端
 npm.cmd run dev
 
 # 检查生产构建
 npm.cmd run build
 
-# 检查代码
+# 检查前端代码
 npm.cmd run lint
 
 # 运行浏览器自动化测试
 npm.cmd run test:e2e
 
-# 格式化项目文件
-npm.cmd run format
+# 运行后端测试
+.\backend\.venv\Scripts\python.exe -m pytest backend\tests -q
 ```
-
-在部分 Windows 电脑中，直接运行 `npm` 可能受到 PowerShell 执行策略限制，此时使用本文中的 `npm.cmd`。
 
 ## 项目结构
 
 ```text
-.lovable/
-├─ public/images/          # 网站固定图片素材
-├─ src/components/        # React 页面组件
-├─ src/data/              # 默认演示相册数据
-├─ src/hooks/             # 本地草稿等 React Hooks
-├─ src/lib/               # 存储、图片处理、导入导出逻辑
-├─ src/routes/            # 网站页面路由
-├─ src/themes/            # 固定画风和插画槽位配置
-├─ tests/e2e/             # Playwright 浏览器测试
-├─ docs/                  # 项目规划和技术文档
-├─ 图标等素材/             # 原始设计素材
-└─ package.json           # 依赖和运行命令
+baby-growth-album-demo/
+├─ frontend/                 React 前端
+│  ├─ public/images/         网站内置图片
+│  ├─ src/                   页面、组件和前端逻辑
+│  └─ tests/e2e/             浏览器自动化测试
+├─ backend/                  FastAPI 后端
+│  ├─ app/                   API、数据库和媒体处理逻辑
+│  ├─ data/                  私人相册数据，不提交 GitHub
+│  ├─ tests/                 后端测试
+│  ├─ requirements.txt       Python 依赖
+│  └─ run.py                 后端启动入口
+├─ scripts/                  测试辅助脚本
+├─ docs/                     项目规划和技术文档
+├─ package.json              根目录 npm 命令入口
+└─ README.md                 当前使用说明
 ```
 
 ## Git 与 GitHub
 
-当前主要开发分支：
-
-```text
-codex/demo-1.5-pro
-```
-
-远程仓库：
-
-[Yi-xin-Li/baby-growth-album-demo](https://github.com/Yi-xin-Li/baby-growth-album-demo)
-
-提交新修改：
+远程仓库：[Yi-xin-Li/baby-growth-album-demo](https://github.com/Yi-xin-Li/baby-growth-album-demo)
 
 ```powershell
 git status
@@ -178,20 +234,12 @@ git commit -m "说明本次修改"
 git push
 ```
 
-项目与 Lovable 连接。不要使用 `git push --force`，也不要重写已经推送的提交历史，否则可能导致 Lovable 中的项目记录丢失。
+不要使用 `git push --force`，避免误删远程仓库的提交历史。
 
-## 当前版本状态
+## 当前版本
 
-- 版本：Demo 1.5 Pro
-- 技术栈：React 19、TypeScript、Tailwind CSS 4、TanStack Start、Vite
-- 数据模式：浏览器本地草稿
-- 主要目标：完成可展示、可编辑、适合手机使用的宝宝成长相册 Demo
-- 暂未包含：账号系统、云端照片同步、数据库、付费系统和正式线上后台
-
-## 后续可扩展方向
-
-- 接入对象存储，保存大量宝宝照片和视频。
-- 增加账号登录、家庭成员权限和私密分享链接。
-- 增加背景裁剪、音乐播放列表及更多自定义插画位置。
-- 提供相册打包导出和一键部署。
-- 加入存储容量、订阅付费和客户交付功能。
+- 前端：React 19、TypeScript、Tailwind CSS 4、TanStack Start、Vite
+- 后端：FastAPI、SQLite、本机媒体目录
+- 当前定位：本机可展示、可编辑的手机端宝宝成长相册
+- 局域网模式：同一家庭 Wi-Fi 下可查看和编辑，数据仍保存在电脑
+- 暂未包含：账号系统、云端存储、公开分享链接和付费系统

@@ -18,12 +18,27 @@ dist-ssr
 test-results/
 playwright-report/
 
+# Local FastAPI data (contains private album photos and music)
+backend/data/
+backend/.venv/
+backend/.e2e-data/
+backend/.env
+backend/**/__pycache__/
+.pytest_cache/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
 
-# Local reference and source-art materials (runtime assets live in public/images)
+# Local reference and source-art materials (runtime assets live in frontend/public/images)
 图标等素材/
+picture/
+
+# Local AI/Lovable workspace metadata
+.agents/
+.codex/
+.lovable/
+/project.json
 
 # Editor directories and files
 .vscode/*

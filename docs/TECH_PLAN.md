@@ -6,8 +6,8 @@
 - Tailwind CSS 4
 - Framer Motion
 - Vite 构建
-- 现有单页路由：`src/routes/index.tsx`
-- 现有素材：`src/assets` 与 `public/images`
+- 现有单页路由：`frontend/src/routes/index.tsx`
+- 现有素材：`frontend/src/assets` 与 `frontend/public/images`
 
 Demo 不更换技术栈，不新增数据库和后端服务。
 
@@ -22,7 +22,7 @@ Demo 不更换技术栈，不新增数据库和后端服务。
 ## 3. 目标目录
 
 ```text
-src/
+frontend/src/
   components/growth-album/
     AlbumCover.tsx
     ChapterDirectory.tsx
@@ -37,7 +37,7 @@ src/
   routes/
     index.tsx
   styles.css
-public/images/
+frontend/public/images/
 docs/
 ```
 
@@ -113,7 +113,7 @@ npm run build
 
 ## 8. Git 与变更控制
 
-- 不重写已推送到 Lovable 的提交历史。
+- 不使用强制推送重写已发布的提交历史。
 - 每完成一个可运行阶段再建立提交节点。
 - 不混入与当前步骤无关的重构。
 - 修改范围前先更新文档，再修改代码。
@@ -136,4 +136,3 @@ npm run build
 - 浏览器核心流程可用。
 - 手机端没有阻断体验的问题。
 - 无需后端即可运行 Demo。
-
