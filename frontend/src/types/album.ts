@@ -14,8 +14,14 @@ export type ImageMedia = {
 
 export type VideoMedia = {
   type: "video";
-  poster: string;
-  videoUrl?: string;
+  id: string;
+  sourceId: string;
+  source: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  poster?: string;
+  posterGroupId?: string;
   alt?: string;
 };
 
@@ -45,11 +51,10 @@ export type Story = {
   title: string;
   date: string;
   cover: string;
+  coverGroupId?: string;
   note: string;
   thumbs: string[];
   extraCount: number;
-  videoUrl?: string;
-  videoPoster?: string;
   media?: MediaItem[];
 };
 

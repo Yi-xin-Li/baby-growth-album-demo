@@ -4,6 +4,7 @@ import zipfile
 from fastapi.testclient import TestClient
 from PIL import Image
 
+from app.database import MEDIA_DIR
 from app.main import app
 
 
@@ -20,6 +21,10 @@ def editor_headers(client: TestClient, takeover: bool = False) -> dict[str, str]
     )
     assert response.status_code == 200
     return {"Authorization": f"Bearer {response.json()['token']}"}
+
+
+def make_mp4(payload_size: int = 128) -> bytes:
+    return b"\x00\x00\x00\x18ftypisom" + bytes(payload_size)
 
 
 def test_album_photo_and_complete_export():
@@ -116,3 +121,91 @@ def test_editor_authentication_takeover_and_lan_cors():
             },
         )
         assert "access-control-allow-origin" not in rejected.headers
+
+
+def test_video_upload_range_validation_and_backup(monkeypatch):
+    album = {
+        "id": "video-album",
+        "slug": "video-album",
+        "profile": {"displayName": "视频宝宝"},
+        "chapters": [{"stories": [{"media": []}]}],
+    }
+    with TestClient(app) as client:
+        unauthorized = client.post(
+            "/api/albums/video-album/videos",
+            files={"file": ("memory.mp4", make_mp4(), "video/mp4")},
+        )
+        assert unauthorized.status_code == 401
+
+        headers = editor_headers(client)
+        assert client.put(
+            "/api/albums/video-album", json={"album": album}, headers=headers
+        ).status_code == 200
+        uploaded = client.post(
+            "/api/albums/video-album/videos",
+            files={"file": ("memory.mp4", make_mp4(), "video/mp4")},
+            headers=headers,
+        )
+        assert uploaded.status_code == 200
+        video = uploaded.json()
+        assert video["type"] == "video"
+        assert video["source"].startswith("backend://asset/")
+        album["chapters"][0]["stories"][0]["media"] = [video]
+        assert client.put(
+            "/api/albums/video-album", json={"album": album}, headers=headers
+        ).status_code == 200
+
+        ranged = client.get(
+            f"/api/assets/{video['sourceId']}", headers={"Range": "bytes=0-7"}
+        )
+        assert ranged.status_code == 206
+        assert ranged.content == make_mp4()[:8]
+        assert ranged.headers["content-range"].startswith("bytes 0-7/")
+        assert ranged.headers["content-disposition"].startswith("inline")
+
+        invalid = client.post(
+            "/api/albums/video-album/videos",
+            files={"file": ("fake.mp4", b"not-a-video", "video/mp4")},
+            headers=headers,
+        )
+        assert invalid.status_code == 400
+
+        mismatch = client.post(
+            "/api/albums/video-album/videos",
+            files={"file": ("wrong.webm", make_mp4(), "video/mp4")},
+            headers=headers,
+        )
+        assert mismatch.status_code == 400
+
+        monkeypatch.setenv("BABY_ALBUM_MAX_VIDEO_MB", "1")
+        oversized = client.post(
+            "/api/albums/video-album/videos",
+            files={"file": ("large.mp4", make_mp4(1024 * 1024), "video/mp4")},
+            headers=headers,
+        )
+        assert oversized.status_code == 400
+        assert not list((MEDIA_DIR / ".uploads").glob("*.part"))
+        monkeypatch.delenv("BABY_ALBUM_MAX_VIDEO_MB", raising=False)
+
+        exported = client.get("/api/albums/video-album/export", headers=headers)
+        assert exported.status_code == 200
+        with zipfile.ZipFile(io.BytesIO(exported.content)) as archive:
+            assert any(name.startswith("assets/video-album/videos/") for name in archive.namelist())
+        inspected = client.post(
+            "/api/import/inspect",
+            files={"file": ("video-backup.zip", exported.content, "application/zip")},
+            headers=headers,
+        )
+        assert inspected.status_code == 200
+        assert inspected.json()["summary"]["videoCount"] == 1
+        restored = client.post(
+            "/api/import/apply",
+            json={"token": inspected.json()["token"]},
+            headers=headers,
+        )
+        assert restored.status_code == 200
+        restored_video = client.get(
+            f"/api/assets/{video['sourceId']}", headers={"Range": "bytes=0-7"}
+        )
+        assert restored_video.status_code == 206
+        assert restored_video.content == make_mp4()[:8]

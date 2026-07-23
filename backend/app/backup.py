@@ -84,12 +84,16 @@ def inspect_backup(path: Path) -> dict:
     photo_count = sum(
         1 for story in stories for media in story.get("media", []) if media.get("type") == "image"
     )
+    video_count = sum(
+        1 for story in stories for media in story.get("media", []) if media.get("type") == "video"
+    )
     return {
         "albumId": album.get("id"),
         "displayName": album.get("profile", {}).get("displayName", "未命名宝宝"),
         "chapterCount": len(chapters),
         "storyCount": len(stories),
         "photoCount": photo_count,
+        "videoCount": video_count,
         "assetCount": len(manifest.get("assets", [])),
         "backupBytes": path.stat().st_size,
     }

@@ -23,7 +23,7 @@ from .auth import (  # noqa: E402
 )
 from .backup import apply_backup, create_backup, inspect_backup
 from .database import MEDIA_DIR, TEMP_DIR, get_active_album, get_album, get_album_revision, get_asset, initialize_database, put_album, reset_all_data, storage_stats
-from .storage import clear_album_assets, delete_asset_group, save_generic_asset, save_photo
+from .storage import clear_album_assets, delete_asset_group, save_generic_asset, save_photo, save_video
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -159,6 +159,18 @@ async def upload_asset(
         raise HTTPException(400, str(error)) from error
 
 
+@app.post("/api/albums/{album_id}/videos")
+async def upload_video(
+    album_id: str,
+    file: UploadFile = File(...),
+    _session: Annotated[str, Depends(require_editor)] = None,
+) -> dict:
+    try:
+        return await save_video(album_id, file)
+    except ValueError as error:
+        raise HTTPException(400, str(error)) from error
+
+
 @app.get("/api/assets/{asset_id}")
 def read_asset(asset_id: str) -> FileResponse:
     asset = get_asset(asset_id)
@@ -167,7 +179,12 @@ def read_asset(asset_id: str) -> FileResponse:
     path = MEDIA_DIR / asset["relative_path"]
     if not path.is_file():
         raise HTTPException(404, "素材文件已丢失")
-    return FileResponse(path, media_type=asset["mime_type"], filename=asset["original_name"])
+    return FileResponse(
+        path,
+        media_type=asset["mime_type"],
+        filename=asset["original_name"],
+        content_disposition_type="inline",
+    )
 
 
 @app.delete("/api/assets/groups/{group_id}", status_code=204)

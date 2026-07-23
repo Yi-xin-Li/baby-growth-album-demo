@@ -7,16 +7,19 @@ import {
   ChevronDown,
   Download,
   FileUp,
+  Film,
   ImagePlus,
   Palette,
   Plus,
   RotateCcw,
   Save,
   Trash2,
+  X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { AlbumNavigation } from "@/components/album/AlbumNavigation";
+import { SafeImage } from "@/components/album/SafeImage";
 import { useAlbumDraft } from "@/hooks/use-album-draft";
 import { maxImagesPerStory } from "@/lib/image-processing";
 import { getImageSource } from "@/lib/album-media";
@@ -29,12 +32,13 @@ import {
   saveBackendAlbum,
   uploadBackendAsset,
   uploadBackendPhoto,
+  uploadBackendVideo,
   type BackupSummary,
   type StorageStats,
 } from "@/lib/backend-api";
 import { migrateLegacyAlbum } from "@/lib/legacy-migration";
 import { loadLocalAlbumDraft } from "@/lib/album-store";
-import type { GrowthAlbum, ImageMedia, Story } from "@/types/album";
+import type { GrowthAlbum, ImageMedia, Story, VideoMedia } from "@/types/album";
 
 export const Route = createFileRoute("/editor")({
   beforeLoad: () => {
@@ -50,10 +54,39 @@ const formatBytes = (bytes = 0) => {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 };
 
+const getStoredImageSource = (item: ImageMedia) =>
+  item.thumbnail ?? item.preview ?? item.original ?? item.src ?? "/images/cover_baby.png";
+
+const getStoredCoverSource = (item: ImageMedia) =>
+  item.preview ?? item.original ?? item.src ?? item.thumbnail ?? "/images/cover_baby.png";
+
 export type EditorMode = "profile" | "stories";
 
+function updateAlbumStory(
+  album: GrowthAlbum,
+  chapterId: string,
+  storyId: string,
+  updater: (story: Story) => Story,
+) {
+  return {
+    ...album,
+    chapters: album.chapters.map((chapter) =>
+      chapter.id === chapterId
+        ? {
+            ...chapter,
+            stories: chapter.stories.map((story) =>
+              story.id === storyId ? updater(story) : story,
+            ),
+          }
+        : chapter,
+    ),
+  };
+}
+
 export function AlbumEditor({ mode }: { mode: EditorMode }) {
-  const { album, setAlbum, reset, status } = useAlbumDraft();
+  const { album, setAlbum, reset, status, saveNow } = useAlbumDraft();
+  const albumRef = useRef(album);
+  albumRef.current = album;
   const [chapterId, setChapterId] = useState(album.chapters[0]?.id ?? "");
   const [storyId, setStoryId] = useState(album.chapters[0]?.stories[0]?.id ?? "");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -62,6 +95,10 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
   const [backupSummary, setBackupSummary] = useState<BackupSummary | null>(null);
   const [importToken, setImportToken] = useState("");
   const [transferBusy, setTransferBusy] = useState(false);
+  const [videoBusy, setVideoBusy] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState<number | null>(null);
+  const videoUploadControllerRef = useRef<AbortController | null>(null);
+  const operationBusy = transferBusy || videoBusy;
   const chapter = album.chapters.find((item) => item.id === chapterId) ?? album.chapters[0];
   const story = chapter?.stories.find((item) => item.id === storyId) ?? chapter?.stories[0];
   const statusText = {
@@ -84,20 +121,20 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
   }, [album.id, status]);
 
   useEffect(() => {
-    if (!editorMessage || transferBusy) return;
+    if (!editorMessage || operationBusy) return;
     const timer = window.setTimeout(() => setEditorMessage(""), 3500);
     return () => window.clearTimeout(timer);
-  }, [editorMessage, transferBusy]);
+  }, [editorMessage, operationBusy]);
 
   useEffect(() => {
-    if (!transferBusy) return;
+    if (!operationBusy) return;
     const preventLeaving = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", preventLeaving);
     return () => window.removeEventListener("beforeunload", preventLeaving);
-  }, [transferBusy]);
+  }, [operationBusy]);
 
   if (status === "loading") {
     return (
@@ -120,19 +157,12 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
 
   const updateStory = (patch: Partial<Story>) => {
     if (!chapter || !story) return;
-    setAlbum((current) => ({
-      ...current,
-      chapters: current.chapters.map((item) =>
-        item.id === chapter.id
-          ? {
-              ...item,
-              stories: item.stories.map((currentStory) =>
-                currentStory.id === story.id ? { ...currentStory, ...patch } : currentStory,
-              ),
-            }
-          : item,
-      ),
-    }));
+    setAlbum((current) =>
+      updateAlbumStory(current, chapter.id, story.id, (currentStory) => ({
+        ...currentStory,
+        ...patch,
+      })),
+    );
   };
 
   const addStory = () => {
@@ -156,18 +186,33 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
     setStoryId(id);
   };
 
-  const deleteStory = () => {
+  const deleteStory = async () => {
     if (!chapter || !story || !window.confirm(`确定删除“${story.title}”吗？`)) return;
+    const removedStory = story;
     const remaining = chapter.stories.filter((item) => item.id !== story.id);
-    setAlbum((current) => ({
-      ...current,
-      chapters: current.chapters.map((item) =>
+    const nextAlbum = {
+      ...albumRef.current,
+      chapters: albumRef.current.chapters.map((item) =>
         item.id === chapter.id ? { ...item, stories: remaining } : item,
       ),
-    }));
-    setStoryId(remaining[0]?.id ?? "");
-    for (const item of story.media ?? []) {
-      if (item.type === "image") void deleteBackendAssetGroup(item.id).catch(() => undefined);
+    };
+    setVideoBusy(true);
+    setEditorMessage("正在删除故事及媒体…");
+    try {
+      await saveNow(nextAlbum);
+      setStoryId(remaining[0]?.id ?? "");
+      for (const item of removedStory.media ?? []) {
+        await deleteBackendAssetGroup(item.id).catch(() => undefined);
+        if (item.type === "video") {
+          await deleteBackendAssetGroup(item.posterGroupId).catch(() => undefined);
+        }
+      }
+      await deleteBackendAssetGroup(removedStory.coverGroupId).catch(() => undefined);
+      setEditorMessage("故事及关联媒体已删除");
+    } catch (error) {
+      setEditorMessage(error instanceof Error ? error.message : "故事删除失败");
+    } finally {
+      setVideoBusy(false);
     }
   };
 
@@ -190,6 +235,137 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
   const imageMedia = (story?.media ?? []).filter(
     (item): item is ImageMedia => item.type === "image",
   );
+  const videoMedia = (story?.media ?? []).find((item): item is VideoMedia => item.type === "video");
+
+  const uploadVideo = async (file?: File) => {
+    if (!file || !chapter || !story || videoBusy) return;
+    const targetChapterId = chapter.id;
+    const targetStoryId = story.id;
+    const controller = new AbortController();
+    videoUploadControllerRef.current = controller;
+    setVideoBusy(true);
+    setVideoUploadProgress(0);
+    setEditorMessage("正在上传视频…");
+    let uploaded: VideoMedia | null = null;
+    try {
+      uploaded = await uploadBackendVideo(
+        album.id,
+        file,
+        setVideoUploadProgress,
+        controller.signal,
+      );
+      const currentAlbum = albumRef.current;
+      const currentStory = currentAlbum.chapters
+        .find((item) => item.id === targetChapterId)
+        ?.stories.find((item) => item.id === targetStoryId);
+      if (!currentStory) throw new Error("目标故事已不存在");
+      const previousVideo = currentStory.media?.find(
+        (item): item is VideoMedia => item.type === "video",
+      );
+      const nextAlbum = updateAlbumStory(currentAlbum, targetChapterId, targetStoryId, (entry) => ({
+        ...entry,
+        media: [
+          uploaded as VideoMedia,
+          ...(entry.media ?? []).filter((item) => item.type === "image"),
+        ],
+      }));
+      await saveNow(nextAlbum);
+      if (previousVideo) {
+        await deleteBackendAssetGroup(previousVideo.id).catch(() => undefined);
+        await deleteBackendAssetGroup(previousVideo.posterGroupId).catch(() => undefined);
+      }
+      setEditorMessage(previousVideo ? "视频已替换并保存" : "视频已上传并保存");
+    } catch (error) {
+      if (uploaded) await deleteBackendAssetGroup(uploaded.id).catch(() => undefined);
+      setEditorMessage(
+        error instanceof DOMException && error.name === "AbortError"
+          ? "视频上传已取消"
+          : error instanceof Error
+            ? error.message
+            : "视频上传失败",
+      );
+    } finally {
+      videoUploadControllerRef.current = null;
+      setVideoUploadProgress(null);
+      setVideoBusy(false);
+    }
+  };
+
+  const removeVideo = async () => {
+    if (!chapter || !story || !videoMedia || videoBusy) return;
+    if (!window.confirm(`确定删除视频“${videoMedia.name}”吗？`)) return;
+    setVideoBusy(true);
+    setEditorMessage("正在删除视频…");
+    try {
+      const nextAlbum = updateAlbumStory(albumRef.current, chapter.id, story.id, (entry) => ({
+        ...entry,
+        media: (entry.media ?? []).filter((item) => item.type !== "video"),
+      }));
+      await saveNow(nextAlbum);
+      await deleteBackendAssetGroup(videoMedia.id);
+      await deleteBackendAssetGroup(videoMedia.posterGroupId).catch(() => undefined);
+      setEditorMessage("视频已删除");
+    } catch (error) {
+      setEditorMessage(error instanceof Error ? error.message : "视频删除失败");
+    } finally {
+      setVideoBusy(false);
+    }
+  };
+
+  const uploadStoryCover = async (file?: File) => {
+    if (!file || !chapter || !story || videoBusy) return;
+    const targetChapterId = chapter.id;
+    const targetStoryId = story.id;
+    setVideoBusy(true);
+    setEditorMessage("正在上传故事封面…");
+    let uploaded: ImageMedia | null = null;
+    try {
+      uploaded = await uploadBackendPhoto(albumRef.current, file);
+      const currentAlbum = albumRef.current;
+      const currentStory = currentAlbum.chapters
+        .find((item) => item.id === targetChapterId)
+        ?.stories.find((item) => item.id === targetStoryId);
+      if (!currentStory) throw new Error("目标故事已不存在");
+      const previousCoverGroupId = currentStory.coverGroupId;
+      const nextAlbum = updateAlbumStory(currentAlbum, targetChapterId, targetStoryId, (entry) => ({
+        ...entry,
+        cover: uploaded ? getStoredCoverSource(uploaded) : entry.cover,
+        coverGroupId: uploaded?.id,
+      }));
+      await saveNow(nextAlbum);
+      await deleteBackendAssetGroup(previousCoverGroupId).catch(() => undefined);
+      setEditorMessage(previousCoverGroupId ? "故事封面已替换并保存" : "故事封面已上传并保存");
+    } catch (error) {
+      if (uploaded) await deleteBackendAssetGroup(uploaded.id).catch(() => undefined);
+      setEditorMessage(error instanceof Error ? error.message : "故事封面上传失败");
+    } finally {
+      setVideoBusy(false);
+    }
+  };
+
+  const removeStoryCover = async () => {
+    if (!chapter || !story?.coverGroupId || videoBusy) return;
+    const coverGroupId = story.coverGroupId;
+    const fallbackCover = imageMedia[0]
+      ? getStoredImageSource(imageMedia[0])
+      : "/images/cover_baby.png";
+    setVideoBusy(true);
+    setEditorMessage("正在恢复默认封面…");
+    try {
+      const nextAlbum = updateAlbumStory(albumRef.current, chapter.id, story.id, (entry) => ({
+        ...entry,
+        cover: fallbackCover,
+        coverGroupId: undefined,
+      }));
+      await saveNow(nextAlbum);
+      await deleteBackendAssetGroup(coverGroupId);
+      setEditorMessage("已移除自定义故事封面");
+    } catch (error) {
+      setEditorMessage(error instanceof Error ? error.message : "故事封面移除失败");
+    } finally {
+      setVideoBusy(false);
+    }
+  };
 
   const uploadImages = async (files: FileList | null) => {
     if (!story || !files?.length) return;
@@ -209,8 +385,9 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
       const existing = story.media ?? [];
       updateStory({
         media: [...existing, ...variants],
-        cover: imageMedia.length ? story.cover : getImageSource(variants[0], "thumbnail"),
-        thumbs: [...story.thumbs, ...variants.map((item) => getImageSource(item, "thumbnail"))],
+        cover:
+          story.coverGroupId || imageMedia.length ? story.cover : getStoredImageSource(variants[0]),
+        thumbs: [...story.thumbs, ...variants.map(getStoredImageSource)],
         extraCount: 0,
       });
       setEditorMessage(`已生成 ${variants.length} 张图片的缩略图、预览图和高清图`);
@@ -229,9 +406,9 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
     [images[index], images[nextIndex]] = [images[nextIndex], images[index]];
     const videos = story.media.filter((item) => item.type === "video");
     updateStory({
-      media: [...images, ...videos],
-      cover: getImageSource(images[0], "thumbnail"),
-      thumbs: images.map((item) => getImageSource(item, "thumbnail")),
+      media: [...videos, ...images],
+      cover: story.coverGroupId ? story.cover : getStoredImageSource(images[0]),
+      thumbs: images.map(getStoredImageSource),
     });
   };
 
@@ -242,9 +419,13 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
     void deleteBackendAssetGroup(removed?.id).catch(() => undefined);
     const videos = story.media.filter((item) => item.type === "video");
     updateStory({
-      media: [...images, ...videos],
-      cover: images[0] ? getImageSource(images[0], "thumbnail") : "/images/cover_baby.png",
-      thumbs: images.map((item) => getImageSource(item, "thumbnail")),
+      media: [...videos, ...images],
+      cover: story.coverGroupId
+        ? story.cover
+        : images[0]
+          ? getStoredImageSource(images[0])
+          : "/images/cover_baby.png",
+      thumbs: images.map(getStoredImageSource),
     });
   };
 
@@ -317,25 +498,51 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
   };
 
   const uploadVideoPoster = async (file?: File) => {
-    if (!file) return;
+    if (!file || !chapter || !story || !videoMedia || videoBusy) return;
+    const targetChapterId = chapter.id;
+    const targetStoryId = story.id;
+    setVideoBusy(true);
+    let uploaded: Awaited<ReturnType<typeof uploadBackendAsset>> | null = null;
     try {
       setEditorMessage("正在处理视频封面…");
-      updateStory({
-        videoPoster: (await uploadBackendAsset(album.id, "illustration", file)).source,
-      });
-      setEditorMessage("视频封面已更新");
+      uploaded = await uploadBackendAsset(album.id, "illustration", file);
+      const currentAlbum = albumRef.current;
+      const currentVideo = currentAlbum.chapters
+        .find((item) => item.id === targetChapterId)
+        ?.stories.find((item) => item.id === targetStoryId)
+        ?.media?.find((item): item is VideoMedia => item.type === "video");
+      if (!currentVideo) throw new Error("请先上传视频");
+      const nextAlbum = updateAlbumStory(currentAlbum, targetChapterId, targetStoryId, (entry) => ({
+        ...entry,
+        media: (entry.media ?? []).map((item) =>
+          item.type === "video"
+            ? { ...item, poster: uploaded?.source, posterGroupId: uploaded?.id }
+            : item,
+        ),
+      }));
+      await saveNow(nextAlbum);
+      await deleteBackendAssetGroup(currentVideo.posterGroupId).catch(() => undefined);
+      setEditorMessage("视频封面已更新并保存");
     } catch (error) {
+      if (uploaded) await deleteBackendAssetGroup(uploaded.id).catch(() => undefined);
       setEditorMessage(error instanceof Error ? error.message : "视频封面处理失败");
+    } finally {
+      setVideoBusy(false);
     }
   };
 
   return (
     <main className="min-h-screen bg-[#f4f1eb] pt-[52px] text-[#2e2a25]">
-      <AlbumNavigation active={mode} autoHide onNavigate={() => !transferBusy} />
+      <AlbumNavigation active={mode} autoHide onNavigate={() => !operationBusy} />
       <header className="flex min-h-14 items-center justify-between border-b border-black/5 bg-[#f4f1eb]/90 px-4 backdrop-blur sm:px-7">
         <div className="flex items-center gap-3">
           <a
             href="/"
+            onClick={(event) => {
+              if (!operationBusy) return;
+              event.preventDefault();
+              setEditorMessage("当前操作完成或取消后才能离开编辑页");
+            }}
             className="grid size-10 place-items-center rounded-full bg-white shadow-sm"
             aria-label="返回展示页"
           >
@@ -476,6 +683,7 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                   <div className="space-y-3">
                     <select
                       className={inputClass}
+                      disabled={videoBusy}
                       value={chapter?.id ?? ""}
                       onChange={(event) => {
                         const next = album.chapters.find((item) => item.id === event.target.value);
@@ -494,6 +702,7 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                         <button
                           key={item.id}
                           type="button"
+                          disabled={videoBusy}
                           onClick={() => setStoryId(item.id)}
                           className={`w-full rounded-xl px-3 py-2 text-left text-xs ${story?.id === item.id ? "bg-black text-white" : "bg-white hover:bg-white/70"}`}
                         >
@@ -504,6 +713,7 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                     </div>
                     <button
                       type="button"
+                      disabled={videoBusy}
                       onClick={addStory}
                       className="flex min-h-10 w-full items-center justify-center gap-1 rounded-xl border border-dashed border-black/20 text-xs"
                     >
@@ -515,6 +725,7 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                       <EditorField label="所属章节">
                         <select
                           className={inputClass}
+                          disabled={videoBusy}
                           value={chapter.id}
                           onChange={(event) => moveStory(event.target.value)}
                         >
@@ -539,13 +750,50 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                           onChange={(event) => updateStory({ date: event.target.value })}
                         />
                       </EditorField>
-                      <EditorField label="封面路径（仅保存相对路径或网络地址）">
-                        <input
-                          className={inputClass}
-                          value={story.cover}
-                          onChange={(event) => updateStory({ cover: event.target.value })}
-                        />
-                      </EditorField>
+                      <div className="rounded-2xl border border-dashed border-black/15 bg-neutral-50 p-4">
+                        <div className="flex items-center gap-3">
+                          <SafeImage
+                            src={story.cover}
+                            alt={`${story.title}封面`}
+                            className="size-20 shrink-0 rounded-xl object-cover shadow-sm"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold">故事封面</p>
+                            <p className="mt-1 text-[10px] leading-4 text-neutral-400">
+                              JPG / PNG / WebP / AVIF，上传后保存到本机后端。
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <label
+                                className={`inline-flex min-h-10 items-center gap-2 rounded-xl bg-black px-3 text-xs text-white ${videoBusy ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+                              >
+                                <ImagePlus className="size-3.5" />
+                                {story.coverGroupId ? "替换封面" : "上传封面"}
+                                <input
+                                  data-testid="story-cover-upload"
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp,image/avif"
+                                  disabled={videoBusy}
+                                  className="sr-only"
+                                  onChange={(event) => {
+                                    void uploadStoryCover(event.target.files?.[0]);
+                                    event.target.value = "";
+                                  }}
+                                />
+                              </label>
+                              {story.coverGroupId && (
+                                <button
+                                  type="button"
+                                  disabled={videoBusy}
+                                  onClick={() => void removeStoryCover()}
+                                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-red-50 px-3 text-xs text-red-600 disabled:opacity-40"
+                                >
+                                  <Trash2 className="size-3.5" /> 移除封面
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                       <EditorField label="故事文字">
                         <textarea
                           rows={5}
@@ -554,32 +802,101 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                           onChange={(event) => updateStory({ note: event.target.value })}
                         />
                       </EditorField>
-                      <div className="grid gap-3 rounded-2xl bg-neutral-50 p-4 sm:grid-cols-2">
-                        <EditorField label="视频地址（可选，点击后才加载）">
-                          <input
-                            className={inputClass}
-                            value={story.videoUrl ?? ""}
-                            onChange={(event) =>
-                              updateStory({ videoUrl: event.target.value || undefined })
-                            }
-                            placeholder="./media/video/story.mp4"
-                          />
-                        </EditorField>
-                        <div>
-                          <p className="text-xs font-bold text-neutral-600">视频封面（可选）</p>
-                          <label className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-3 text-xs shadow-sm">
-                            <ImagePlus className="size-3.5" /> 上传视频封面
-                            <input
-                              type="file"
-                              accept="image/png,image/webp,image/jpeg"
-                              className="sr-only"
-                              onChange={(event) => {
-                                void uploadVideoPoster(event.target.files?.[0]);
-                                event.target.value = "";
-                              }}
-                            />
-                          </label>
+                      <div className="rounded-2xl border border-dashed border-black/15 bg-neutral-50 p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="flex items-center gap-2 text-xs font-bold">
+                              <Film className="size-3.5" /> 故事视频
+                            </p>
+                            <p className="mt-1 text-[10px] leading-4 text-neutral-400">
+                              MP4 / WebM，最多一个且不超过 200MB；点击播放后才加载。
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <label
+                              className={`inline-flex min-h-10 items-center gap-2 rounded-xl bg-black px-3 text-xs text-white ${videoBusy ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+                            >
+                              <Film className="size-3.5" /> {videoMedia ? "替换视频" : "上传视频"}
+                              <input
+                                type="file"
+                                accept="video/mp4,video/webm,.mp4,.webm"
+                                disabled={videoBusy}
+                                className="sr-only"
+                                onChange={(event) => {
+                                  void uploadVideo(event.target.files?.[0]);
+                                  event.target.value = "";
+                                }}
+                              />
+                            </label>
+                            {videoMedia && (
+                              <button
+                                type="button"
+                                disabled={videoBusy}
+                                onClick={() => void removeVideo()}
+                                className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-red-50 px-3 text-xs text-red-600 disabled:opacity-40"
+                              >
+                                <Trash2 className="size-3.5" /> 删除视频
+                              </button>
+                            )}
+                          </div>
                         </div>
+
+                        {videoMedia && (
+                          <div className="mt-3 rounded-xl bg-white px-3 py-2 text-[11px] text-neutral-500 shadow-sm">
+                            <strong className="block truncate text-xs text-neutral-700">
+                              {videoMedia.name}
+                            </strong>
+                            <span>
+                              {formatBytes(videoMedia.size)} · {videoMedia.mimeType}
+                            </span>
+                          </div>
+                        )}
+
+                        {videoUploadProgress !== null && (
+                          <div className="mt-4">
+                            <div className="mb-1 flex items-center justify-between gap-3 text-[10px] text-neutral-500">
+                              <span>正在上传视频</span>
+                              <span>{videoUploadProgress}%</span>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-neutral-200">
+                              <div
+                                className="h-full rounded-full bg-neutral-800 transition-[width]"
+                                style={{ width: `${videoUploadProgress}%` }}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => videoUploadControllerRef.current?.abort()}
+                              className="mt-2 inline-flex min-h-9 items-center gap-1 rounded-xl bg-white px-3 text-[10px] text-neutral-600 shadow-sm"
+                            >
+                              <X className="size-3" /> 取消上传
+                            </button>
+                          </div>
+                        )}
+
+                        {videoMedia && (
+                          <div className="mt-4 border-t border-black/5 pt-3">
+                            <p className="text-xs font-bold text-neutral-600">视频封面（可选）</p>
+                            <p className="mt-1 text-[10px] text-neutral-400">
+                              未上传时使用当前故事封面；重新上传会替换旧封面。
+                            </p>
+                            <label
+                              className={`mt-2 inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-3 text-xs shadow-sm ${videoBusy ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+                            >
+                              <ImagePlus className="size-3.5" /> 上传视频封面
+                              <input
+                                type="file"
+                                accept="image/png,image/webp,image/jpeg"
+                                disabled={videoBusy}
+                                className="sr-only"
+                                onChange={(event) => {
+                                  void uploadVideoPoster(event.target.files?.[0]);
+                                  event.target.value = "";
+                                }}
+                              />
+                            </label>
+                          </div>
+                        )}
                       </div>
                       <div className="rounded-2xl border border-dashed border-black/15 bg-white/70 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -589,12 +906,15 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                               JPG / PNG / WebP，单张不超过 12MB；自动生成三级 WebP 资源。
                             </p>
                           </div>
-                          <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-black px-3 text-xs text-white">
+                          <label
+                            className={`inline-flex min-h-10 items-center gap-2 rounded-xl bg-black px-3 text-xs text-white ${operationBusy ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+                          >
                             <ImagePlus className="size-3.5" /> 上传照片
                             <input
                               type="file"
                               accept="image/jpeg,image/png,image/webp"
                               multiple
+                              disabled={operationBusy}
                               className="sr-only"
                               onChange={(event) => {
                                 void uploadImages(event.target.files);
@@ -669,7 +989,8 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                       </div>
                       <button
                         type="button"
-                        onClick={deleteStory}
+                        disabled={videoBusy}
+                        onClick={() => void deleteStory()}
                         className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-xs text-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="size-3.5" /> 删除这篇故事
@@ -765,7 +1086,8 @@ export function AlbumEditor({ mode }: { mode: EditorMode }) {
                       <p className="font-bold">确认恢复“{backupSummary.displayName}”的完整备份？</p>
                       <p className="mt-2 leading-6 text-neutral-600">
                         {backupSummary.chapterCount} 个章节 · {backupSummary.storyCount} 篇故事 ·{" "}
-                        {backupSummary.photoCount} 张照片 · {formatBytes(backupSummary.backupBytes)}
+                        {backupSummary.photoCount} 张照片 · {backupSummary.videoCount} 个视频 ·{" "}
+                        {formatBytes(backupSummary.backupBytes)}
                       </p>
                       <div className="mt-3 flex gap-2">
                         <button

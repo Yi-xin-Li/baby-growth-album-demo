@@ -24,6 +24,21 @@ export function cloneDemoAlbum(): GrowthAlbum {
 
 function normalizeAlbum(album: GrowthAlbum): GrowthAlbum {
   const music = album.backgroundMusic;
+  const normalizeStory = (input: GrowthAlbum["chapters"][number]["stories"][number]) => {
+    const story = input as typeof input & { videoUrl?: string; videoPoster?: string };
+    const { videoUrl: _legacyVideoUrl, videoPoster: _legacyVideoPoster, ...normalized } = story;
+    const media = normalized.media ?? [];
+    const video = media.find(
+      (item) =>
+        item.type === "video" && Boolean(item.id && item.sourceId && item.source && item.name),
+    );
+    return {
+      ...normalized,
+      media: normalized.media
+        ? [...(video ? [video] : []), ...media.filter((item) => item.type === "image")]
+        : undefined,
+    };
+  };
   return {
     ...album,
     animationSpeed: album.animationSpeed ?? "slow",
@@ -45,6 +60,7 @@ function normalizeAlbum(album: GrowthAlbum): GrowthAlbum {
     chapters: album.chapters.map((chapter) => ({
       ...chapter,
       icon: chapter.icon || defaultChapterArtwork[chapter.id] || "",
+      stories: chapter.stories.map(normalizeStory),
     })),
   };
 }

@@ -22,7 +22,9 @@ def test_inspects_complete_backup(tmp_path):
     album = {
         "id": "test",
         "profile": {"displayName": "宝宝"},
-        "chapters": [{"stories": [{"media": [{"type": "image"}]}]}],
+        "chapters": [
+            {"stories": [{"media": [{"type": "image"}, {"type": "video"}]}]}
+        ],
     }
     with zipfile.ZipFile(path, "w") as archive:
         archive.writestr("manifest.json", json.dumps({"format": "baby-album", "version": 1, "assets": []}))
@@ -30,3 +32,4 @@ def test_inspects_complete_backup(tmp_path):
     summary = inspect_backup(path)
     assert summary["displayName"] == "宝宝"
     assert summary["photoCount"] == 1
+    assert summary["videoCount"] == 1

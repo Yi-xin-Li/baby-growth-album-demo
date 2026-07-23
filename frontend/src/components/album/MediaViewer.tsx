@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getImageSource } from "@/lib/album-media";
+import { resolveBackendAsset } from "@/lib/backend-api";
 import type { MediaItem } from "@/types/album";
 import { SafeImage } from "./SafeImage";
 
@@ -72,25 +73,17 @@ export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
 
   const item = state?.media[state.index];
   const mediaKey = item
-    ? `${state?.index}-${item.type === "image" ? getImageSource(item, "original") : (item.videoUrl ?? item.poster)}`
+    ? `${state?.index}-${item.type === "image" ? getImageSource(item, "original") : item.source}`
     : "empty";
 
   const startSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest("video")) return;
     pointerStartRef.current = { x: event.clientX, y: event.clientY };
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // Synthetic pointer events and older browsers may not expose pointer capture.
-    }
   };
 
   const finishSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
     const start = pointerStartRef.current;
     pointerStartRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
     if (!start || (event.target as HTMLElement).closest("video")) return;
     const deltaX = event.clientX - start.x;
     const deltaY = event.clientY - start.y;
@@ -152,10 +145,10 @@ export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
                 transition={{ duration: reduceMotion ? 0.12 : 0.22, ease: "easeOut" }}
                 className="w-full"
               >
-                {item.type === "video" && item.videoUrl && playing ? (
+                {item.type === "video" && item.source && playing ? (
                   <video
-                    src={item.videoUrl}
-                    poster={item.poster}
+                    src={resolveBackendAsset(item.source)}
+                    poster={resolveBackendAsset(item.poster)}
                     controls
                     autoPlay
                     playsInline
@@ -166,7 +159,7 @@ export function MediaViewer({ state, onClose, onChange }: MediaViewerProps) {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => item.type === "video" && item.videoUrl && setPlaying(true)}
+                    onClick={() => item.type === "video" && item.source && setPlaying(true)}
                     className="relative block w-full cursor-default"
                   >
                     <SafeImage

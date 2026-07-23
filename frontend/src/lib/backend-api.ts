@@ -1,4 +1,4 @@
-import type { GrowthAlbum, ImageMedia } from "@/types/album";
+import type { GrowthAlbum, ImageMedia, VideoMedia } from "@/types/album";
 import { clearEditorToken, getEditorToken, setEditorToken } from "@/lib/editor-session";
 
 const browserHost = typeof window === "undefined" ? "127.0.0.1" : window.location.hostname;
@@ -12,6 +12,7 @@ export type BackupSummary = {
   chapterCount: number;
   storyCount: number;
   photoCount: number;
+  videoCount: number;
   assetCount: number;
   backupBytes: number;
 };
@@ -107,11 +108,64 @@ export async function uploadBackendAsset(
 ) {
   const body = new FormData();
   body.append("file", file);
-  return apiRequest<{ assetId: string; source: string; name: string }>(
+  return apiRequest<{ id: string; assetId: string; source: string; name: string }>(
     `/api/albums/${albumId}/assets/${kind}`,
     { method: "POST", body },
     true,
   );
+}
+
+export function uploadBackendVideo(
+  albumId: string,
+  file: File,
+  onProgress?: (progress: number) => void,
+  signal?: AbortSignal,
+) {
+  return new Promise<VideoMedia>((resolve, reject) => {
+    const body = new FormData();
+    body.append("file", file);
+    const request = new XMLHttpRequest();
+    request.open("POST", `${apiBaseUrl}/api/albums/${albumId}/videos`);
+    const token = getEditorToken();
+    if (token) request.setRequestHeader("Authorization", `Bearer ${token}`);
+
+    const abortUpload = () => request.abort();
+    const cleanup = () => signal?.removeEventListener("abort", abortUpload);
+    if (signal?.aborted) {
+      reject(new DOMException("视频上传已取消", "AbortError"));
+      return;
+    }
+    signal?.addEventListener("abort", abortUpload, { once: true });
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+    };
+    request.onerror = () => {
+      cleanup();
+      reject(new Error("无法连接 FastAPI 后端"));
+    };
+    request.onabort = () => {
+      cleanup();
+      reject(new DOMException("视频上传已取消", "AbortError"));
+    };
+    request.onload = () => {
+      cleanup();
+      try {
+        const result = JSON.parse(request.responseText) as VideoMedia | { detail?: string };
+        if (request.status < 200 || request.status >= 300) {
+          if (request.status === 401 || request.status === 409) {
+            clearEditorToken("编辑会话已失效");
+          }
+          reject(new Error("detail" in result && result.detail ? result.detail : "视频上传失败"));
+          return;
+        }
+        onProgress?.(100);
+        resolve(result as VideoMedia);
+      } catch {
+        reject(new Error("后端返回了无法识别的视频上传结果"));
+      }
+    };
+    request.send(body);
+  });
 }
 
 export const getStorageStats = (albumId: string) =>

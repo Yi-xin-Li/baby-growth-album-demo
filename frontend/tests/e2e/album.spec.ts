@@ -230,17 +230,26 @@ for (const width of [320, 375, 390, 430, 768, 1280]) {
   });
 }
 
-test("图片缺失时显示占位并保持页面可用", async ({ page }) => {
+test("故事封面通过文件上传并同步到展示页", async ({ page }) => {
   await page.goto("/editor/stories");
   await page.getByRole("button", { name: "新增故事" }).click();
-  await page
-    .getByRole("textbox", { name: "封面路径（仅保存相对路径或网络地址）" })
-    .fill("/missing-test-image.jpg");
-  await expect(page.getByText("正在自动保存…")).toBeVisible();
-  await expect(page.getByText("草稿已保存")).toHaveText("草稿已保存");
+  await expect(page.getByRole("textbox", { name: /封面路径/ })).toHaveCount(0);
+  await page.getByTestId("story-cover-upload").setInputFiles(fixtureImage);
+  await expect(page.getByRole("status")).toContainText("故事封面已上传并保存", {
+    timeout: 20_000,
+  });
+  await expect(page.getByRole("button", { name: "移除封面" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "新的成长故事封面" })).toHaveAttribute(
+    "src",
+    /^http:\/\/127\.0\.0\.1:8000\/api\/assets\//,
+  );
   await page.goto("/");
   await page.getByTestId("chapter-birth").click();
-  await expect(page.getByRole("img", { name: /暂未加载/ }).first()).toBeVisible();
+  await page.getByText("新的成长故事").click();
+  await expect(page.getByTestId("story-hero-media").locator("img")).toHaveAttribute(
+    "src",
+    /^http:\/\/127\.0\.0\.1:8000\/api\/assets\//,
+  );
 });
 
 test("章节和预览深链接可以直接打开，已删除的内置故事不会显示", async ({ page }) => {
@@ -320,6 +329,98 @@ test("上传照片会生成三级资源并可排序删除", async ({ page }) => 
   await expect(page.getByRole("button", { name: "删除照片" })).toBeVisible();
   await expect(page.getByRole("button", { name: "前移照片" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "后移照片" })).toBeDisabled();
+});
+
+test("故事视频可直接上传、延迟加载并由后端播放", async ({ page, request }) => {
+  await page.goto("/editor/stories");
+  await page.getByRole("button", { name: "新增故事" }).click();
+  await expect(page.getByText("视频地址")).toHaveCount(0);
+
+  const videoUpload = page.locator('input[type="file"][accept*="video/mp4"]');
+  const mp4Header = Buffer.from([
+    0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0x00, 0x00, 0x02, 0x00,
+    0x69, 0x73, 0x6f, 0x6d, 0x69, 0x73, 0x6f, 0x32,
+  ]);
+  await videoUpload.setInputFiles({
+    name: "成长片段.mp4",
+    mimeType: "video/mp4",
+    buffer: mp4Header,
+  });
+  await expect(page.getByRole("status")).toContainText("视频已上传并保存", {
+    timeout: 20_000,
+  });
+  await expect(page.getByText("成长片段.mp4")).toBeVisible();
+
+  const albumResponse = await request.get("http://127.0.0.1:8000/api/albums/active");
+  const backendAlbum = (await albumResponse.json()).album;
+  const videos = backendAlbum.chapters[0].stories[0].media.filter(
+    (item: { type: string }) => item.type === "video",
+  );
+  expect(videos).toHaveLength(1);
+
+  await page.goto("/");
+  await page.getByTestId("chapter-birth").click();
+  await page.getByText("新的成长故事").click();
+  await page.getByTestId("story-hero-media").click();
+  const viewer = page.getByTestId("media-viewer");
+  await expect(viewer.locator("video")).toHaveCount(0);
+  await viewer.getByText("▶").click();
+  const player = viewer.locator("video");
+  await expect(player).toHaveAttribute("preload", "none");
+  await expect(player).toHaveAttribute("src", /127\.0\.0\.1:8000\/api\/assets\//);
+
+  const source = await player.getAttribute("src");
+  const rangeResponse = await request.get(source!, { headers: { Range: "bytes=0-7" } });
+  expect(rangeResponse.status()).toBe(206);
+  expect(rangeResponse.headers()["content-range"]).toMatch(/^bytes 0-7\//);
+});
+
+test("替换和删除故事视频后不会遗留旧资源", async ({ page, request }) => {
+  await page.goto("/editor/stories");
+  await page.getByRole("button", { name: "新增故事" }).click();
+  const videoUpload = page.locator('input[type="file"][accept*="video/mp4"]');
+  await videoUpload.setInputFiles({
+    name: "第一段.mp4",
+    mimeType: "video/mp4",
+    buffer: Buffer.from("000000186674797069736f6d0000020069736f6d69736f32", "hex"),
+  });
+  await expect(page.getByRole("status")).toContainText("视频已上传并保存", {
+    timeout: 20_000,
+  });
+  let album = (await (await request.get("http://127.0.0.1:8000/api/albums/active")).json()).album;
+  const firstVideo = album.chapters[0].stories[0].media.find(
+    (item: { type: string }) => item.type === "video",
+  );
+
+  await videoUpload.setInputFiles({
+    name: "第二段.webm",
+    mimeType: "video/webm",
+    buffer: Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0x01, 0x00, 0x00, 0x00]),
+  });
+  await expect(page.getByRole("status")).toContainText("视频已替换并保存", {
+    timeout: 20_000,
+  });
+  await expect(page.getByText("第二段.webm")).toBeVisible();
+  album = (await (await request.get("http://127.0.0.1:8000/api/albums/active")).json()).album;
+  const videos = album.chapters[0].stories[0].media.filter(
+    (item: { type: string }) => item.type === "video",
+  );
+  expect(videos).toHaveLength(1);
+  expect(videos[0].sourceId).not.toBe(firstVideo.sourceId);
+  expect(
+    (await request.get(`http://127.0.0.1:8000/api/assets/${firstVideo.sourceId}`)).status(),
+  ).toBe(404);
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "删除视频" }).click();
+  await expect(page.getByRole("status")).toContainText("视频已删除");
+  album = (await (await request.get("http://127.0.0.1:8000/api/albums/active")).json()).album;
+  expect(
+    album.chapters[0].stories[0].media.filter((item: { type: string }) => item.type === "video"),
+  ).toHaveLength(0);
+  expect(
+    (await request.get(`http://127.0.0.1:8000/api/assets/${videos[0].sourceId}`)).status(),
+  ).toBe(404);
 });
 
 test("插画上传后需要手动保存，并支持恢复默认", async ({ page }) => {

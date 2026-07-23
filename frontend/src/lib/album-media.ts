@@ -26,30 +26,12 @@ export function getImageSrcSet(item: ImageMedia) {
 
 export function getStoryMedia(story: Story): MediaItem[] {
   if (story.media?.length) {
-    if (story.videoUrl && !story.media.some((item) => item.type === "video")) {
-      return [
-        {
-          type: "video",
-          poster: story.videoPoster ?? story.cover,
-          videoUrl: story.videoUrl,
-          alt: story.title,
-        },
-        ...story.media,
-      ];
-    }
-    return story.media;
+    return story.media.map((item) =>
+      item.type === "video" ? { ...item, poster: item.poster || story.cover } : item,
+    );
   }
 
-  const media: MediaItem[] = story.videoUrl
-    ? [
-        {
-          type: "video",
-          poster: story.videoPoster ?? story.cover,
-          videoUrl: story.videoUrl,
-          alt: story.title,
-        },
-      ]
-    : [{ type: "image", src: story.cover, alt: story.title }];
+  const media: MediaItem[] = [{ type: "image", src: story.cover, alt: story.title }];
   media.push(...story.thumbs.map((src) => ({ type: "image" as const, src, alt: story.title })));
 
   for (let index = 0; index < story.extraCount; index += 1) {

@@ -19,12 +19,11 @@ export function useAlbumDraft({ liveRefresh = false }: { liveRefresh?: boolean }
   const revisionRef = useRef<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAlbumRef = useRef<GrowthAlbum | null>(null);
-  const savingRef = useRef(false);
+  const flushPromiseRef = useRef<Promise<void> | null>(null);
 
-  const flushPendingSave = useCallback(async () => {
-    if (savingRef.current) return;
-    savingRef.current = true;
-    try {
+  const flushPendingSave = useCallback((): Promise<void> => {
+    if (flushPromiseRef.current) return flushPromiseRef.current;
+    const run = async () => {
       while (pendingAlbumRef.current) {
         const nextAlbum = pendingAlbumRef.current;
         pendingAlbumRef.current = null;
@@ -32,14 +31,17 @@ export function useAlbumDraft({ liveRefresh = false }: { liveRefresh?: boolean }
           revisionRef.current = await saveAlbumDraft(nextAlbum);
         } catch {
           setStatus("error");
+          throw new Error("相册保存失败");
         }
       }
       if (!saveTimerRef.current && !pendingAlbumRef.current) {
         setStatus((current) => (current === "error" ? current : "saved"));
       }
-    } finally {
-      savingRef.current = false;
-    }
+    };
+    flushPromiseRef.current = run().finally(() => {
+      flushPromiseRef.current = null;
+    });
+    return flushPromiseRef.current;
   }, []);
 
   useEffect(() => {
@@ -104,7 +106,7 @@ export function useAlbumDraft({ liveRefresh = false }: { liveRefresh?: boolean }
         saveTimerRef.current = setTimeout(() => {
           saveTimerRef.current = null;
           pendingAlbumRef.current = nextAlbum;
-          void flushPendingSave();
+          void flushPendingSave().catch(() => undefined);
         }, 450);
         return nextAlbum;
       });
@@ -128,5 +130,21 @@ export function useAlbumDraft({ liveRefresh = false }: { liveRefresh?: boolean }
     setStatus("saved");
   }, []);
 
-  return { album, setAlbum, reset, status, adoptSavedAlbum };
+  const saveNow = useCallback(
+    async (nextAlbum: GrowthAlbum) => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      latestAlbumRef.current = nextAlbum;
+      setAlbumState(nextAlbum);
+      setStatus("saving");
+      pendingAlbumRef.current = nextAlbum;
+      await flushPendingSave();
+      return nextAlbum;
+    },
+    [flushPendingSave],
+  );
+
+  return { album, setAlbum, reset, status, adoptSavedAlbum, saveNow };
 }

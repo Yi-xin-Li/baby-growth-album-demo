@@ -17,6 +17,7 @@ dist-ssr
 *.local
 test-results/
 playwright-report/
+<<<<<<< HEAD
 
 # Local FastAPI data (contains private album photos and music)
 backend/data/
@@ -25,6 +26,8 @@ backend/.e2e-data/
 backend/.env
 backend/**/__pycache__/
 .pytest_cache/
+=======
+>>>>>>> 2fb0b9ab5263e34ad8fdfa5ee38d52cfca070727
 
 # Wrangler / Cloudflare
 .wrangler/
